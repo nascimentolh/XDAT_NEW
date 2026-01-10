@@ -516,55 +516,10 @@ public class Controller implements Initializable {
 
     private TreeView<Object> createTreeView(Field listField, SearchPanel searchPanel) {
         TreeView<Object> elements = new TreeView<>();
-        elements.setCellFactory(param -> new TreeCell<Object>() {
-            @Override
-            protected void updateItem(Object item, boolean empty) {
-                super.updateItem(item, empty);
 
-                // Remove highlight classes first
-                getStyleClass().removeAll("search-match", "search-match-parent");
+        // Setup cell factory with both highlight and drag-and-drop support
+        setupTreeViewCellFactory(elements, searchPanel);
 
-                if (item == null || empty) {
-                    setText(null);
-                    setGraphic(null);
-                } else {
-                    setText(item.toString());
-                    if (UIEntity.class.isAssignableFrom(item.getClass())) {
-                        try (InputStream is = getClass().getResourceAsStream("/acmi/l2/clientmod/xdat/nodeicons/" + UI_NODE_ICONS.getOrDefault(item.getClass().getSimpleName(), UI_NODE_ICON_DEFAULT))) {
-                            setGraphic(new ImageView(new Image(is)));
-                        } catch (IOException ignore) {}
-                    }
-
-                    // Apply highlight if item matches search criteria
-                    if (searchPanel.hasActiveFilters()) {
-                        SearchCriteria criteria = new SearchCriteria(
-                                searchPanel.getSearchText(),
-                                searchPanel.getSelectedType(),
-                                searchPanel.getSelectedProperty(),
-                                searchPanel.isUseRegex()
-                        );
-                        if (criteria.matches(item)) {
-                            getStyleClass().add("search-match");
-                        } else if (getTreeItem() != null && hasMatchingDescendant(getTreeItem(), criteria)) {
-                            // Parent has matching children - highlight as parent
-                            getStyleClass().add("search-match-parent");
-                        }
-                    }
-                }
-            }
-
-            private boolean hasMatchingDescendant(TreeItem<Object> treeItem, SearchCriteria criteria) {
-                for (TreeItem<Object> child : treeItem.getChildren()) {
-                    if (criteria.matches(child.getValue())) {
-                        return true;
-                    }
-                    if (hasMatchingDescendant(child, criteria)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        });
         elements.setShowRoot(false);
         elements.setContextMenu(createContextMenu(elements));
 
@@ -577,9 +532,6 @@ public class Controller implements Initializable {
         elements.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             currentTreeView = elements;
         });
-
-        // Enable drag and drop for reordering
-        setupDragAndDrop(elements);
 
         // Create invalidation listener that rebuilds tree with search criteria
         InvalidationListener treeInvalidation = (observable) -> {
@@ -605,15 +557,16 @@ public class Controller implements Initializable {
         return elements;
     }
 
-    private void setupDragAndDrop(TreeView<Object> treeView) {
+    private void setupTreeViewCellFactory(TreeView<Object> treeView, SearchPanel searchPanel) {
         treeView.setCellFactory(tv -> {
             TreeCell<Object> cell = new TreeCell<Object>() {
                 @Override
                 protected void updateItem(Object item, boolean empty) {
                     super.updateItem(item, empty);
 
-                    // Remove drag-over style
-                    getStyleClass().removeAll("drag-over-top", "drag-over-bottom", "drag-over");
+                    // Remove all dynamic style classes
+                    getStyleClass().removeAll("drag-over-top", "drag-over-bottom", "drag-over",
+                            "search-match", "search-match-parent");
 
                     if (item == null || empty) {
                         setText(null);
@@ -626,7 +579,34 @@ public class Controller implements Initializable {
                                 setGraphic(new ImageView(new Image(is)));
                             } catch (IOException ignore) {}
                         }
+
+                        // Apply highlight if item matches search criteria
+                        if (searchPanel.hasActiveFilters()) {
+                            SearchCriteria criteria = new SearchCriteria(
+                                    searchPanel.getSearchText(),
+                                    searchPanel.getSelectedType(),
+                                    searchPanel.getSelectedProperty(),
+                                    searchPanel.isUseRegex()
+                            );
+                            if (criteria.matches(item)) {
+                                getStyleClass().add("search-match");
+                            } else if (getTreeItem() != null && hasMatchingDescendant(getTreeItem(), criteria)) {
+                                getStyleClass().add("search-match-parent");
+                            }
+                        }
                     }
+                }
+
+                private boolean hasMatchingDescendant(TreeItem<Object> treeItem, SearchCriteria criteria) {
+                    for (TreeItem<Object> child : treeItem.getChildren()) {
+                        if (criteria.matches(child.getValue())) {
+                            return true;
+                        }
+                        if (hasMatchingDescendant(child, criteria)) {
+                            return true;
+                        }
+                    }
+                    return false;
                 }
             };
 
