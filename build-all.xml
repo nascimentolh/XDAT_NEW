@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="L2-Tools-Build-All" default="build-all" basedir=".">
+    <description>Master build script for all L2 tool projects</description>
+
+    <!-- Build order based on dependencies:
+         1. L2crypt (no dependencies)
+         2. L2io (no dependencies)
+         3. Serializer (depends on L2io)
+         4. L2unreal (depends on L2crypt, L2io, Serializer)
+         5. xdat_editor (depends on all above)
+    -->
+
+    <target name="clean-all" description="Clean all projects">
+        <ant dir="L2crypt" target="clean"/>
+        <ant dir="L2io" target="clean"/>
+        <ant dir="Serializer" target="clean"/>
+        <ant dir="L2unreal" target="clean"/>
+        <ant dir="xdat_editor" target="clean"/>
+        <echo message="All projects cleaned."/>
+    </target>
+
+    <target name="build-l2crypt" description="Build L2crypt">
+        <echo message="========== Building L2crypt =========="/>
+        <ant dir="L2crypt" target="jar"/>
+    </target>
+
+    <target name="build-l2io" description="Build L2io">
+        <echo message="========== Building L2io =========="/>
+        <ant dir="L2io" target="jar"/>
+    </target>
+
+    <target name="build-serializer" depends="build-l2io" description="Build Serializer">
+        <echo message="========== Building Serializer =========="/>
+        <ant dir="Serializer" target="jar"/>
+    </target>
+
+    <target name="build-l2unreal" depends="build-l2crypt,build-l2io,build-serializer" description="Build L2unreal">
+        <echo message="========== Building L2unreal =========="/>
+        <ant dir="L2unreal" target="jar"/>
+    </target>
+
+    <target name="build-xdat-editor" depends="build-l2unreal" description="Build xdat_editor">
+        <echo message="========== Building xdat_editor =========="/>
+        <ant dir="xdat_editor" target="dist"/>
+    </target>
+
+    <target name="build-all" depends="build-xdat-editor" description="Build all projects">
+        <echo message=""/>
+        <echo message="=========================================="/>
+        <echo message="All projects built successfully!"/>
+        <echo message="=========================================="/>
+        <echo message=""/>
+        <echo message="Distribution at: xdat_editor/dist/"/>
+    </target>
+
+    <target name="rebuild-all" depends="clean-all,build-all" description="Clean and rebuild all"/>
+
+</project>

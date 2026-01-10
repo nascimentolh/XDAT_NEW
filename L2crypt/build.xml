@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="L2crypt" default="jar" basedir=".">
+    <description>L2crypt - Lineage 2 encryption/decryption library</description>
+
+    <!-- Properties -->
+    <property name="version" value="1.3.3"/>
+    <property name="src.dir" value="src/main/java"/>
+    <property name="build.dir" value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="dist.dir" value="dist"/>
+    <property name="jar.name" value="l2crypt-${version}.jar"/>
+
+    <!-- Java 21 settings -->
+    <property name="java.source" value="21"/>
+    <property name="java.target" value="21"/>
+
+    <!-- Clean -->
+    <target name="clean" description="Clean build directories">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <!-- Init -->
+    <target name="init" description="Create build directories">
+        <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+    </target>
+
+    <!-- Compile -->
+    <target name="compile" depends="init" description="Compile source code">
+        <javac srcdir="${src.dir}"
+               destdir="${classes.dir}"
+               source="${java.source}"
+               target="${java.target}"
+               encoding="UTF-8"
+               includeantruntime="false"
+               debug="true">
+        </javac>
+    </target>
+
+    <!-- JAR -->
+    <target name="jar" depends="compile" description="Create JAR file">
+        <jar destfile="${dist.dir}/${jar.name}" basedir="${classes.dir}">
+            <manifest>
+                <attribute name="Implementation-Title" value="L2crypt"/>
+                <attribute name="Implementation-Version" value="${version}"/>
+            </manifest>
+        </jar>
+        <echo message="Created: ${dist.dir}/${jar.name}"/>
+    </target>
+
+    <!-- All -->
+    <target name="all" depends="clean,jar" description="Clean and build"/>
+
+</project>

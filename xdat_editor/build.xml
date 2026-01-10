@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="xdat_editor" default="dist" basedir=".">
+    <description>XDAT Editor - Lineage 2 Interface Data Editor</description>
+
+    <!-- Properties -->
+    <property name="version" value="1.3.10"/>
+    <property name="build.dir" value="build"/>
+    <property name="dist.dir" value="dist"/>
+    <property name="lib.dir" value="lib"/>
+
+    <!-- Java 21 settings -->
+    <property name="java.source" value="21"/>
+    <property name="java.target" value="21"/>
+
+    <!-- JavaFX SDK path (optional - only needed if JavaFX not bundled in JDK) -->
+    <property name="javafx.sdk" value="${user.home}/javafx-sdk-21"/>
+    <property name="javafx.lib" value="${javafx.sdk}/lib"/>
+
+    <!-- External library projects -->
+    <property name="l2crypt.jar" value="../L2crypt/dist/l2crypt-1.3.3.jar"/>
+    <property name="l2io.jar" value="../L2io/dist/l2io-2.2.6.jar"/>
+    <property name="serializer.jar" value="../Serializer/dist/serializer-1.2.3.jar"/>
+    <property name="l2unreal.jar" value="../L2unreal/dist/l2unreal-1.5.6.jar"/>
+
+    <!-- Local libs -->
+    <property name="jsquish.jar" value="commons/l2resources/libs/jsquish.jar"/>
+
+    <!-- External dependencies versions (Java 21 compatible) -->
+    <property name="controlsfx.version" value="11.2.1"/>
+    <property name="groovy.version" value="4.0.18"/>
+    <property name="asm.version" value="9.6"/>
+    <property name="commons-csv.version" value="1.10.0"/>
+    <property name="commons-io.version" value="2.15.1"/>
+    <property name="commons-lang3.version" value="3.14.0"/>
+
+    <!-- Clean -->
+    <target name="clean" description="Clean all build directories">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <!-- Init -->
+    <target name="init" description="Create build directories">
+        <mkdir dir="${build.dir}/classes/commons-io"/>
+        <mkdir dir="${build.dir}/classes/commons-l2resources"/>
+        <mkdir dir="${build.dir}/classes/schema"/>
+        <mkdir dir="${build.dir}/classes/editor"/>
+        <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${lib.dir}"/>
+    </target>
+
+    <!-- Detect JavaFX availability -->
+    <target name="detect-javafx" depends="init">
+        <!-- Check if JavaFX is bundled in the JDK (like Zulu JavaFX, Liberica Full, etc.) -->
+        <available classname="javafx.application.Application" property="javafx.bundled"/>
+
+        <!-- Check if external JavaFX SDK exists -->
+        <available file="${javafx.lib}/javafx.controls.jar" property="javafx.sdk.present"/>
+
+        <!-- Set javafx.available if either is true -->
+        <condition property="javafx.available">
+            <or>
+                <isset property="javafx.bundled"/>
+                <isset property="javafx.sdk.present"/>
+            </or>
+        </condition>
+
+        <fail unless="javafx.available">
+JavaFX not found!
+
+Options:
+1. Use a JDK with JavaFX bundled (recommended):
+   - Azul Zulu with JavaFX: https://www.azul.com/downloads/?package=jdk-fx
+   - Liberica Full JDK: https://bell-sw.com/pages/downloads/
+   - With mise: mise use java@zulu-javafx-21
+
+2. Download JavaFX SDK separately:
+   - Download from: https://gluonhq.com/products/javafx/
+   - Extract to: ${user.home}/javafx-sdk-21
+   - Or specify path: ant -Djavafx.sdk=/path/to/javafx-sdk
+        </fail>
+
+        <echo message="JavaFX detected: bundled=${javafx.bundled}, sdk=${javafx.sdk.present}"/>
+    </target>
+
+    <!-- Download dependencies -->
+    <target name="download-deps" depends="init" description="Download external dependencies">
+        <!-- ControlsFX 11.x (compatible with JavaFX 21) -->
+        <get src="https://repo1.maven.org/maven2/org/controlsfx/controlsfx/${controlsfx.version}/controlsfx-${controlsfx.version}.jar"
+             dest="${lib.dir}/controlsfx-${controlsfx.version}.jar" skipexisting="true"/>
+
+        <!-- Groovy 4.x (compatible with Java 21) -->
+        <get src="https://repo1.maven.org/maven2/org/apache/groovy/groovy/${groovy.version}/groovy-${groovy.version}.jar"
+             dest="${lib.dir}/groovy-${groovy.version}.jar" skipexisting="true"/>
+        <get src="https://repo1.maven.org/maven2/org/apache/groovy/groovy-ant/${groovy.version}/groovy-ant-${groovy.version}.jar"
+             dest="${lib.dir}/groovy-ant-${groovy.version}.jar" skipexisting="true"/>
+        <get src="https://repo1.maven.org/maven2/org/apache/groovy/groovy-templates/${groovy.version}/groovy-templates-${groovy.version}.jar"
+             dest="${lib.dir}/groovy-templates-${groovy.version}.jar" skipexisting="true"/>
+        <get src="https://repo1.maven.org/maven2/org/apache/groovy/groovy-xml/${groovy.version}/groovy-xml-${groovy.version}.jar"
+             dest="${lib.dir}/groovy-xml-${groovy.version}.jar" skipexisting="true"/>
+
+        <!-- ASM (required by Groovy for bytecode manipulation) -->
+        <get src="https://repo1.maven.org/maven2/org/ow2/asm/asm/${asm.version}/asm-${asm.version}.jar"
+             dest="${lib.dir}/asm-${asm.version}.jar" skipexisting="true"/>
+        <get src="https://repo1.maven.org/maven2/org/ow2/asm/asm-util/${asm.version}/asm-util-${asm.version}.jar"
+             dest="${lib.dir}/asm-util-${asm.version}.jar" skipexisting="true"/>
+        <get src="https://repo1.maven.org/maven2/org/ow2/asm/asm-analysis/${asm.version}/asm-analysis-${asm.version}.jar"
+             dest="${lib.dir}/asm-analysis-${asm.version}.jar" skipexisting="true"/>
+        <get src="https://repo1.maven.org/maven2/org/ow2/asm/asm-tree/${asm.version}/asm-tree-${asm.version}.jar"
+             dest="${lib.dir}/asm-tree-${asm.version}.jar" skipexisting="true"/>
+
+        <!-- Apache Commons CSV -->
+        <get src="https://repo1.maven.org/maven2/org/apache/commons/commons-csv/${commons-csv.version}/commons-csv-${commons-csv.version}.jar"
+             dest="${lib.dir}/commons-csv-${commons-csv.version}.jar" skipexisting="true"/>
+
+        <!-- Apache Commons IO -->
+        <get src="https://repo1.maven.org/maven2/commons-io/commons-io/${commons-io.version}/commons-io-${commons-io.version}.jar"
+             dest="${lib.dir}/commons-io-${commons-io.version}.jar" skipexisting="true"/>
+
+        <!-- Apache Commons Lang3 -->
+        <get src="https://repo1.maven.org/maven2/org/apache/commons/commons-lang3/${commons-lang3.version}/commons-lang3-${commons-lang3.version}.jar"
+             dest="${lib.dir}/commons-lang3-${commons-lang3.version}.jar" skipexisting="true"/>
+
+        <echo message="Dependencies downloaded to ${lib.dir}"/>
+    </target>
+
+    <!-- Check library dependencies -->
+    <target name="check-libs">
+        <available file="${l2crypt.jar}" property="l2crypt.present"/>
+        <available file="${l2io.jar}" property="l2io.present"/>
+        <available file="${serializer.jar}" property="serializer.present"/>
+        <available file="${l2unreal.jar}" property="l2unreal.present"/>
+        <fail unless="l2crypt.present" message="L2crypt not found. Run 'ant' in ../L2crypt first."/>
+        <fail unless="l2io.present" message="L2io not found. Run 'ant' in ../L2io first."/>
+        <fail unless="serializer.present" message="Serializer not found. Run 'ant' in ../Serializer first."/>
+        <fail unless="l2unreal.present" message="L2unreal not found. Run 'ant' in ../L2unreal first."/>
+    </target>
+
+    <!-- JavaFX classpath (only used if external SDK) -->
+    <path id="javafx.classpath">
+        <fileset dir="${javafx.lib}" erroronmissingdir="false">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- Base classpath -->
+    <path id="base.classpath">
+        <pathelement location="${l2crypt.jar}"/>
+        <pathelement location="${l2io.jar}"/>
+        <pathelement location="${serializer.jar}"/>
+        <pathelement location="${l2unreal.jar}"/>
+        <pathelement location="${jsquish.jar}"/>
+        <pathelement location="${lib.dir}/controlsfx-${controlsfx.version}.jar"/>
+        <pathelement location="${lib.dir}/groovy-${groovy.version}.jar"/>
+        <pathelement location="${lib.dir}/commons-csv-${commons-csv.version}.jar"/>
+        <pathelement location="${lib.dir}/commons-io-${commons-io.version}.jar"/>
+        <pathelement location="${lib.dir}/commons-lang3-${commons-lang3.version}.jar"/>
+    </path>
+
+    <!-- Compile commons:io -->
+    <target name="compile-commons-io" depends="init,download-deps,check-libs,detect-javafx" description="Compile commons:io module">
+        <javac srcdir="commons/io/src/main/java"
+               destdir="${build.dir}/classes/commons-io"
+               source="${java.source}"
+               target="${java.target}"
+               encoding="UTF-8"
+               includeantruntime="false"
+               debug="true">
+            <classpath>
+                <path refid="javafx.classpath"/>
+                <pathelement location="${lib.dir}/groovy-${groovy.version}.jar"/>
+                <pathelement location="${lib.dir}/asm-${asm.version}.jar"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <!-- Compile commons:l2resources -->
+    <target name="compile-commons-l2resources" depends="compile-commons-io" description="Compile commons:l2resources module">
+        <javac srcdir="commons/l2resources/src/main/java"
+               destdir="${build.dir}/classes/commons-l2resources"
+               source="${java.source}"
+               target="${java.target}"
+               encoding="UTF-8"
+               includeantruntime="false"
+               debug="true">
+            <classpath>
+                <pathelement location="${build.dir}/classes/commons-io"/>
+                <pathelement location="${jsquish.jar}"/>
+                <pathelement location="${lib.dir}/commons-io-${commons-io.version}.jar"/>
+                <pathelement location="${l2crypt.jar}"/>
+                <pathelement location="${l2unreal.jar}"/>
+                <pathelement location="${l2io.jar}"/>
+                <pathelement location="${serializer.jar}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <!-- Groovy classpath for compilation -->
+    <path id="groovy.classpath">
+        <pathelement location="${lib.dir}/groovy-${groovy.version}.jar"/>
+        <pathelement location="${lib.dir}/groovy-ant-${groovy.version}.jar"/>
+        <pathelement location="${lib.dir}/groovy-templates-${groovy.version}.jar"/>
+        <pathelement location="${lib.dir}/groovy-xml-${groovy.version}.jar"/>
+        <pathelement location="${lib.dir}/asm-${asm.version}.jar"/>
+        <pathelement location="${lib.dir}/asm-util-${asm.version}.jar"/>
+        <pathelement location="${lib.dir}/asm-analysis-${asm.version}.jar"/>
+        <pathelement location="${lib.dir}/asm-tree-${asm.version}.jar"/>
+    </path>
+
+    <!-- Compile schema (Groovy) -->
+    <target name="compile-schema" depends="compile-commons-l2resources" description="Compile schema module">
+        <taskdef name="groovyc" classname="org.codehaus.groovy.ant.Groovyc">
+            <classpath refid="groovy.classpath"/>
+        </taskdef>
+        <groovyc srcdir="schema/src/main/groovy"
+                 destdir="${build.dir}/classes/schema"
+                 encoding="UTF-8">
+            <classpath>
+                <pathelement location="${build.dir}/classes/commons-io"/>
+                <pathelement location="${build.dir}/classes/commons-l2resources"/>
+                <path refid="groovy.classpath"/>
+                <pathelement location="${l2unreal.jar}"/>
+                <pathelement location="${l2io.jar}"/>
+                <pathelement location="${serializer.jar}"/>
+            </classpath>
+        </groovyc>
+        <!-- Copy schema resources -->
+        <copy todir="${build.dir}/classes/schema">
+            <fileset dir="schema/src/main/resources"/>
+        </copy>
+    </target>
+
+    <!-- Compile editor -->
+    <target name="compile-editor" depends="compile-schema" description="Compile editor module">
+        <javac srcdir="editor/src/main/java"
+               destdir="${build.dir}/classes/editor"
+               source="${java.source}"
+               target="${java.target}"
+               encoding="UTF-8"
+               includeantruntime="false"
+               debug="true">
+            <classpath>
+                <path refid="javafx.classpath"/>
+                <pathelement location="${build.dir}/classes/commons-io"/>
+                <pathelement location="${build.dir}/classes/commons-l2resources"/>
+                <pathelement location="${build.dir}/classes/schema"/>
+                <pathelement location="${lib.dir}/controlsfx-${controlsfx.version}.jar"/>
+                <pathelement location="${lib.dir}/groovy-${groovy.version}.jar"/>
+                <pathelement location="${lib.dir}/commons-csv-${commons-csv.version}.jar"/>
+                <pathelement location="${lib.dir}/commons-io-${commons-io.version}.jar"/>
+                <pathelement location="${l2unreal.jar}"/>
+                <pathelement location="${l2io.jar}"/>
+                <pathelement location="${serializer.jar}"/>
+                <pathelement location="${l2crypt.jar}"/>
+            </classpath>
+        </javac>
+        <!-- Copy resources -->
+        <copy todir="${build.dir}/classes/editor">
+            <fileset dir="editor/src/main/resources"/>
+        </copy>
+    </target>
+
+    <!-- Create JARs -->
+    <target name="jar" depends="compile-editor" description="Create JAR files">
+        <!-- Commons IO JAR -->
+        <jar destfile="${dist.dir}/commons-io.jar" basedir="${build.dir}/classes/commons-io"/>
+
+        <!-- Commons L2Resources JAR -->
+        <jar destfile="${dist.dir}/commons-l2resources.jar" basedir="${build.dir}/classes/commons-l2resources"/>
+
+        <!-- Schema JAR -->
+        <jar destfile="${dist.dir}/schema.jar" basedir="${build.dir}/classes/schema"/>
+
+        <!-- Editor JAR (main) -->
+        <jar destfile="${dist.dir}/xdat-editor-${version}.jar" basedir="${build.dir}/classes/editor">
+            <manifest>
+                <attribute name="Main-Class" value="acmi.l2.clientmod.xdat.XdatEditor"/>
+                <attribute name="Implementation-Title" value="XDAT Editor"/>
+                <attribute name="Implementation-Version" value="${version}"/>
+                <attribute name="Class-Path" value="commons-io.jar commons-l2resources.jar schema.jar l2crypt-1.3.3.jar l2io-2.2.6.jar serializer-1.2.3.jar l2unreal-1.5.6.jar jsquish.jar controlsfx-${controlsfx.version}.jar groovy-${groovy.version}.jar commons-csv-${commons-csv.version}.jar commons-io-${commons-io.version}.jar commons-lang3-${commons-lang3.version}.jar"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!-- Create distribution -->
+    <target name="dist" depends="jar" description="Create distribution">
+        <!-- Copy all dependencies to dist -->
+        <copy file="${l2crypt.jar}" todir="${dist.dir}"/>
+        <copy file="${l2io.jar}" todir="${dist.dir}"/>
+        <copy file="${serializer.jar}" todir="${dist.dir}"/>
+        <copy file="${l2unreal.jar}" todir="${dist.dir}"/>
+        <copy file="${jsquish.jar}" todir="${dist.dir}"/>
+        <copy todir="${dist.dir}">
+            <fileset dir="${lib.dir}">
+                <include name="*.jar"/>
+            </fileset>
+        </copy>
+
+        <!-- Copy L2unreal runtime dependencies -->
+        <copy todir="${dist.dir}">
+            <fileset dir="../L2unreal/lib">
+                <include name="commons-lang3-*.jar"/>
+                <include name="commons-io-*.jar"/>
+            </fileset>
+        </copy>
+
+        <!-- Create launcher script for Linux -->
+        <echo file="${dist.dir}/xdat-editor.sh"><![CDATA[#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Check if JavaFX is bundled in JDK
+if java --module-path . --list-modules 2>/dev/null | grep -q "javafx.controls"; then
+    # JavaFX bundled - run directly
+    java --add-modules javafx.controls,javafx.fxml,javafx.graphics -jar xdat-editor-${version}.jar "$@"
+else
+    # External JavaFX SDK needed
+    JAVAFX_PATH="${JAVAFX_HOME:-$HOME/javafx-sdk-21}/lib"
+    if [ -d "$JAVAFX_PATH" ]; then
+        java --module-path "$JAVAFX_PATH" --add-modules javafx.controls,javafx.fxml,javafx.graphics -jar xdat-editor-${version}.jar "$@"
+    else
+        echo "JavaFX not found!"
+        echo ""
+        echo "Options:"
+        echo "1. Use a JDK with JavaFX bundled:"
+        echo "   - Azul Zulu with JavaFX"
+        echo "   - Liberica Full JDK"
+        echo ""
+        echo "2. Download JavaFX SDK and set JAVAFX_HOME:"
+        echo "   export JAVAFX_HOME=/path/to/javafx-sdk-21"
+        exit 1
+    fi
+fi
+]]></echo>
+        <chmod file="${dist.dir}/xdat-editor.sh" perm="755"/>
+
+        <!-- Create launcher script for Windows -->
+        <echo file="${dist.dir}/xdat-editor.bat"><![CDATA[@echo off
+setlocal
+cd /d "%~dp0"
+
+REM Try running with bundled JavaFX first
+java --add-modules javafx.controls,javafx.fxml,javafx.graphics -jar xdat-editor-${version}.jar %* 2>nul
+if %errorlevel%==0 goto :eof
+
+REM Fall back to external JavaFX SDK
+set JAVAFX_PATH=%JAVAFX_HOME%\lib
+if "%JAVAFX_HOME%"=="" set JAVAFX_PATH=%USERPROFILE%\javafx-sdk-21\lib
+
+if exist "%JAVAFX_PATH%\javafx.controls.jar" (
+    java --module-path "%JAVAFX_PATH%" --add-modules javafx.controls,javafx.fxml,javafx.graphics -jar xdat-editor-${version}.jar %*
+) else (
+    echo JavaFX not found!
+    echo.
+    echo Options:
+    echo 1. Use a JDK with JavaFX bundled (Azul Zulu FX, Liberica Full)
+    echo 2. Download JavaFX SDK and set JAVAFX_HOME environment variable
+    pause
+)
+]]></echo>
+
+        <echo message=""/>
+        <echo message="========================================"/>
+        <echo message="Distribution created in ${dist.dir}/"/>
+        <echo message=""/>
+        <echo message="To run:"/>
+        <echo message="  Linux:   ./dist/xdat-editor.sh"/>
+        <echo message="  Windows: dist\xdat-editor.bat"/>
+        <echo message=""/>
+        <echo message="Requires Java 21+ with JavaFX (bundled or SDK)"/>
+        <echo message="========================================"/>
+    </target>
+
+    <!-- Build all -->
+    <target name="all" depends="clean,dist" description="Clean and build distribution"/>
+
+</project>

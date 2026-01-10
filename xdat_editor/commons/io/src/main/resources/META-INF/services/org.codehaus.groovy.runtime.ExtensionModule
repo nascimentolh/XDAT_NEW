@@ -1,0 +1,4 @@
+moduleName = io
+moduleVersion = 1.1
+extensionClasses = acmi.l2.clientmod.util.IOUtil,\
+acmi.l2.clientmod.util.ScriptMethods

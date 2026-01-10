@@ -1,0 +1,7 @@
+[tools]
+java = "zulu-javafx-21"
+ant = "latest"
+
+# JavaFX 21 SDK must be downloaded separately from:
+# https://gluonhq.com/products/javafx/
+# Extract to ~/javafx-sdk-21 or set JAVAFX_HOME environment variable
