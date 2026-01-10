@@ -54,6 +54,14 @@
                                 <MenuItem onAction="#exit" text="%exit" accelerator="ALT+F4" mnemonicParsing="false"/>
                             </items>
                         </Menu>
+                        <Menu text="%edit" mnemonicParsing="false">
+                            <items>
+                                <MenuItem fx:id="undoMenuItem" onAction="#undo" text="%edit.undo" accelerator="CTRL+Z" mnemonicParsing="false"/>
+                                <MenuItem fx:id="redoMenuItem" onAction="#redo" text="%edit.redo" accelerator="CTRL+Y" mnemonicParsing="false"/>
+                                <SeparatorMenuItem/>
+                                <MenuItem fx:id="historyMenuItem" onAction="#showHistory" text="%edit.history" mnemonicParsing="false"/>
+                            </items>
+                        </Menu>
                         <Menu fx:id="versionMenu" text="%version" mnemonicParsing="false"/>
                         <Menu fx:id="viewMenu" text="%view" mnemonicParsing="false">
                             <items>

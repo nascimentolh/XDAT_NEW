@@ -611,3 +611,35 @@
 .tree-cell.search-match-parent:hover:filled {
     -fx-background-color: rgba(255, 213, 79, 0.15);
 }
+
+/* ===== Preview Panel ===== */
+.preview-panel {
+    -fx-background-color: #1e1e1e;
+}
+
+.preview-panel .tool-bar {
+    -fx-background-color: #252525;
+    -fx-padding: 6 10;
+    -fx-spacing: 10;
+}
+
+.preview-panel .preview-scroll {
+    -fx-background-color: #1a1a1a;
+    -fx-border-color: -xdat-border-color;
+}
+
+.preview-panel .preview-scroll .viewport {
+    -fx-background-color: #1a1a1a;
+}
+
+.preview-panel .preview-statusbar {
+    -fx-background-color: #252525;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-width: 1 0 0 0;
+}
+
+.preview-panel .preview-status {
+    -fx-text-fill: -fx-light-text-color;
+    -fx-font-size: 11px;
+    -fx-font-family: 'Monospace';
+}

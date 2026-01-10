@@ -28,6 +28,7 @@ import acmi.l2.clientmod.l2resources.Sysstr;
 import acmi.l2.clientmod.l2resources.Tex;
 import acmi.l2.clientmod.unreal.Environment;
 import acmi.l2.clientmod.util.*;
+import acmi.l2.clientmod.xdat.history.*;
 import acmi.l2.clientmod.xdat.propertyeditor.*;
 import acmi.l2.clientmod.xdat.search.SearchCriteria;
 import acmi.l2.clientmod.xdat.search.SearchPanel;
@@ -136,6 +137,12 @@ public class Controller implements Initializable {
     private Menu viewMenu;
     @FXML
     private Menu themeMenu;
+    @FXML
+    private MenuItem undoMenuItem;
+    @FXML
+    private MenuItem redoMenuItem;
+    @FXML
+    private MenuItem historyMenuItem;
     private ToggleGroup version = new ToggleGroup();
     private ToggleGroup themeGroup = new ToggleGroup();
     @FXML
@@ -210,6 +217,29 @@ public class Controller implements Initializable {
         tabs.disableProperty().bind(nullXdatObject);
         save.disableProperty().bind(nullXdatObject);
         saveAs.disableProperty().bind(nullXdatObject);
+
+        // Bind undo/redo menu items to UndoManager state
+        UndoManager undoManager = editor.getUndoManager();
+        undoMenuItem.disableProperty().bind(undoManager.canUndoProperty().not());
+        redoMenuItem.disableProperty().bind(undoManager.canRedoProperty().not());
+
+        // Update undo/redo text with descriptions
+        undoManager.canUndoProperty().addListener((obs, oldVal, newVal) -> {
+            String desc = undoManager.getUndoDescription();
+            if (desc != null) {
+                undoMenuItem.setText(interfaceResources.getString("edit.undo") + ": " + desc);
+            } else {
+                undoMenuItem.setText(interfaceResources.getString("edit.undo"));
+            }
+        });
+        undoManager.canRedoProperty().addListener((obs, oldVal, newVal) -> {
+            String desc = undoManager.getRedoDescription();
+            if (desc != null) {
+                redoMenuItem.setText(interfaceResources.getString("edit.redo") + ": " + desc);
+            } else {
+                redoMenuItem.setText(interfaceResources.getString("edit.redo"));
+            }
+        });
 
         xdatFile.addListener((observable, oldValue, newValue) -> {
             if (newValue == null)
@@ -671,6 +701,11 @@ public class Controller implements Initializable {
             props.forEach(property -> {
                 property.setObject(obj);
                 ChangeListener<Object> addToHistory = (observable1, oldValue1, newValue1) -> {
+                    // Skip if UndoManager is executing a command (undo/redo in progress)
+                    if (editor.getUndoManager().isExecutingCommand()) {
+                        return;
+                    }
+
                     String objName = treeItemToScriptString(newSelection);
                     String propName = ((PropertySheetItem)observable1).getName();
                     if ("name".equals(propName) || "wnd".equals(propName)){
@@ -681,6 +716,15 @@ public class Controller implements Initializable {
                         objName = b.toString();
                     }
                     editor.getHistory().valueChanged(objName, property.getName(), newValue1, property.hashCode());
+
+                    // Record property change command for undo/redo
+                    if (property instanceof FieldProperty) {
+                        FieldProperty fieldProperty = (FieldProperty) property;
+                        String elementName = obj.toString();
+                        PropertyChangeCommand command = new PropertyChangeCommand(
+                                obj, fieldProperty.getField(), propName, oldValue1, newValue1, elementName);
+                        editor.getUndoManager().record(command);
+                    }
                 };
                 property.addListener(addToHistory);
 
@@ -831,6 +875,63 @@ public class Controller implements Initializable {
             log.log(Level.WARNING, msg, e);
             Dialogs.showException(Alert.AlertType.ERROR, msg, e.getMessage(), e);
         });
+    }
+
+    @FXML
+    private void undo() {
+        editor.getUndoManager().undo();
+    }
+
+    @FXML
+    private void redo() {
+        editor.getUndoManager().redo();
+    }
+
+    @FXML
+    private void showHistory() {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.initStyle(StageStyle.UTILITY);
+        dialog.setTitle(interfaceResources.getString("history.title"));
+        dialog.setResizable(true);
+
+        UndoManager undoManager = editor.getUndoManager();
+
+        ListView<Command> historyList = new ListView<>(undoManager.getHistoryList());
+        historyList.setPrefSize(500, 400);
+        historyList.setCellFactory(param -> new ListCell<Command>() {
+            @Override
+            protected void updateItem(Command item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    setText(item.getDescription());
+                    // Format timestamp
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm:ss");
+                    String time = sdf.format(new java.util.Date(item.getTimestamp()));
+                    setStyle("-fx-font-family: monospace;");
+                    setText(String.format("[%s] %s", time, item.getDescription()));
+                }
+            }
+        });
+
+        if (undoManager.getHistoryList().isEmpty()) {
+            historyList.setPlaceholder(new Label(interfaceResources.getString("history.no_changes")));
+        }
+
+        Button clearButton = new Button(interfaceResources.getString("history.clear"));
+        clearButton.setOnAction(e -> {
+            undoManager.clear();
+        });
+
+        VBox content = new VBox(10, historyList, clearButton);
+        content.setPadding(new Insets(10));
+
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+        dialog.showAndWait();
     }
 
     @FXML

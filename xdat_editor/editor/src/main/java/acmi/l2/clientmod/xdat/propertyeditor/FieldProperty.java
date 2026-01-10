@@ -140,4 +140,11 @@ public class FieldProperty extends PropertySheetItem {
         for (ChangeListener<? super Object> listener : changeListeners)
             listener.changed(this, oldValue, newValue);
     }
+
+    /**
+     * Returns the field associated with this property.
+     */
+    public Field getField() {
+        return field;
+    }
 }

@@ -22,6 +22,7 @@
 package acmi.l2.clientmod.xdat;
 
 import acmi.l2.clientmod.util.IOEntity;
+import acmi.l2.clientmod.xdat.history.UndoManager;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
@@ -72,6 +73,7 @@ public class XdatEditor extends Application {
     private String applicationVersion;
 
     private History history = new History();
+    private UndoManager undoManager = new UndoManager();
 
     private final ReadOnlyBooleanWrapper working = new ReadOnlyBooleanWrapper();
 
@@ -111,6 +113,10 @@ public class XdatEditor extends Application {
 
     public History getHistory() {
         return history;
+    }
+
+    public UndoManager getUndoManager() {
+        return undoManager;
     }
 
     public String getApplicationVersion() {
