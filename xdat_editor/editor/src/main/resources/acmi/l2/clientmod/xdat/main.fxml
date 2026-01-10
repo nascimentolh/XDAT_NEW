@@ -73,6 +73,7 @@
                         <Menu fx:id="viewMenu" text="%view" mnemonicParsing="false">
                             <items>
                                 <Menu fx:id="themeMenu" text="%view.theme" mnemonicParsing="false"/>
+                                <Menu fx:id="languageMenu" text="%view.language" mnemonicParsing="false"/>
                             </items>
                         </Menu>
                         <Menu text="%help" mnemonicParsing="false">

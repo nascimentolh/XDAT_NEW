@@ -333,6 +333,16 @@
     -fx-border-color: -xdat-border-color;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
+    -fx-padding: 4;
+    -fx-pref-width: 18;
+    -fx-pref-height: 18;
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 18;
+    -fx-max-height: 18;
+}
+
+.check-box .mark {
     -fx-padding: 3;
 }
 
@@ -347,6 +357,18 @@
 
 .check-box:selected .mark {
     -fx-background-color: white;
+}
+
+.check-box:indeterminate .box {
+    -fx-background-color: -fx-accent;
+    -fx-border-color: -fx-accent;
+}
+
+.check-box:indeterminate .mark {
+    -fx-background-color: white;
+    -fx-shape: "M0,0 L8,0 L8,2 L0,2 Z";
+    -fx-scale-shape: true;
+    -fx-padding: 3;
 }
 
 /* ===== Progress Bar ===== */
