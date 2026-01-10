@@ -1,0 +1,118 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.3.10)'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 with JavaFX
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          java-package: 'jdk+fx'
+
+      - name: Install Ant
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ant
+
+      - name: Build all modules
+        run: ant -f build-all.xml
+
+      - name: Get version from build.xml
+        id: get_version
+        run: |
+          VERSION=$(grep -oP 'name="version" value="\K[^"]+' xdat_editor/build.xml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Create release archive
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          cd xdat_editor/dist
+          zip -r ../../xdat-editor-${VERSION}.zip .
+          cd ../..
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xdat-editor-${{ steps.get_version.outputs.version }}
+          path: xdat-editor-*.zip
+          retention-days: 30
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.version != ''
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from build.xml
+        id: get_version
+        run: |
+          VERSION=$(grep -oP 'name="version" value="\K[^"]+' xdat_editor/build.xml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: xdat-editor-${{ steps.get_version.outputs.version }}
+
+      - name: Determine release tag
+        id: release_tag
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: XDAT Editor ${{ steps.get_version.outputs.version }}
+          body: |
+            ## XDAT Editor ${{ steps.get_version.outputs.version }}
+
+            ### Requirements / Requisitos
+            - Java 21+ with JavaFX
+
+            ### Recommended JDK / JDK Recomendado
+            - [Azul Zulu JDK FX](https://www.azul.com/downloads/?package=jdk-fx) (includes JavaFX)
+            - [Liberica Full JDK](https://bell-sw.com/pages/downloads/)
+
+            ### How to Run / Como Executar
+            - **Windows**: Extract and run `xdat-editor.bat`
+            - **Linux/macOS**: Extract and run `./xdat-editor.sh`
+
+            ---
+
+            ### Changelog
+            See [commits](../../commits/${{ steps.release_tag.outputs.tag }}) for detailed changes.
+          files: |
+            xdat-editor-*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
