@@ -644,3 +644,70 @@
     -fx-font-size: 11px;
     -fx-font-family: 'Monospace';
 }
+
+/* ===== Drag and Drop Styles ===== */
+.tree-cell.drag-over {
+    -fx-background-color: rgba(33, 150, 243, 0.25);
+    -fx-border-color: -fx-accent;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+
+.tree-cell.drag-over-top {
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 2 0 0 0;
+    -fx-border-style: solid;
+    -fx-background-color: transparent;
+    -fx-background-insets: -2 0 0 0;
+    -fx-effect: dropshadow(three-pass-box, -fx-accent, 0, 0, 0, -2);
+}
+
+.tree-cell.drag-over-bottom {
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0 0 2 0;
+    -fx-border-style: solid;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0 0 -2 0;
+    -fx-effect: dropshadow(three-pass-box, -fx-accent, 0, 0, 0, 2);
+}
+
+/* ===== Replace Button Styles ===== */
+.search-panel .replace-button,
+.search-panel .replace-all-button {
+    -fx-padding: 6 12;
+    -fx-font-size: 12px;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+}
+
+.search-panel .replace-button {
+    -fx-background-color: linear-gradient(to bottom, #2196f3, #1976d2);
+    -fx-border-color: #42a5f5;
+    -fx-text-fill: white;
+}
+
+.search-panel .replace-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #42a5f5, #2196f3);
+    -fx-border-color: #64b5f6;
+}
+
+.search-panel .replace-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #1976d2, #2196f3);
+}
+
+.search-panel .replace-all-button {
+    -fx-background-color: linear-gradient(to bottom, #ff9800, #f57c00);
+    -fx-border-color: #ffa726;
+    -fx-text-fill: white;
+}
+
+.search-panel .replace-all-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #ffa726, #ff9800);
+    -fx-border-color: #ffb74d;
+}
+
+.search-panel .replace-all-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #f57c00, #ff9800);
+}

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016 acmi
+ * Copyright (c) 2024 TurtleLess - qesta.com.br (Find & Replace functionality)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -18,6 +19,9 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
+ *
+ * @author TurtleLess
+ * @website qesta.com.br
  */
 package acmi.l2.clientmod.xdat.search;
 
@@ -41,13 +45,17 @@ import java.util.regex.PatternSyntaxException;
 public class SearchPanel extends VBox {
 
     private final TextField searchField;
+    private final TextField replaceField;
     private final ComboBox<String> typeFilter;
     private final ComboBox<String> propertyFilter;
     private final CheckBox regexCheckBox;
     private final Button clearButton;
+    private final Button replaceButton;
+    private final Button replaceAllButton;
     private final Label statusLabel;
 
     private final StringProperty searchText = new SimpleStringProperty("");
+    private final StringProperty replaceText = new SimpleStringProperty("");
     private final StringProperty selectedType = new SimpleStringProperty(null);
     private final StringProperty selectedProperty = new SimpleStringProperty(null);
     private final BooleanProperty useRegex = new SimpleBooleanProperty(false);
@@ -55,6 +63,9 @@ public class SearchPanel extends VBox {
 
     private final ObservableList<String> componentTypes = FXCollections.observableArrayList();
     private final ObservableList<String> propertyNames = FXCollections.observableArrayList();
+
+    private Runnable onReplace;
+    private Runnable onReplaceAll;
 
     public SearchPanel(ResourceBundle resources) {
         setSpacing(8);
@@ -103,7 +114,36 @@ public class SearchPanel extends VBox {
 
         row2.getChildren().addAll(propLabel, propertyFilter, regexCheckBox, clearButton, statusLabel);
 
-        getChildren().addAll(row1, row2);
+        // Third row: Replace field and buttons
+        HBox row3 = new HBox(8);
+        row3.setAlignment(Pos.CENTER_LEFT);
+
+        Label replaceLabel = new Label(resources.getString("search.replace"));
+        replaceField = new TextField();
+        replaceField.setPromptText(resources.getString("search.replace_placeholder"));
+        replaceField.getStyleClass().add("search-field");
+        HBox.setHgrow(replaceField, Priority.ALWAYS);
+        replaceField.textProperty().bindBidirectional(replaceText);
+
+        replaceButton = new Button(resources.getString("search.replace_button"));
+        replaceButton.getStyleClass().add("replace-button");
+        replaceButton.setOnAction(e -> {
+            if (onReplace != null) {
+                onReplace.run();
+            }
+        });
+
+        replaceAllButton = new Button(resources.getString("search.replace_all"));
+        replaceAllButton.getStyleClass().add("replace-all-button");
+        replaceAllButton.setOnAction(e -> {
+            if (onReplaceAll != null) {
+                onReplaceAll.run();
+            }
+        });
+
+        row3.getChildren().addAll(replaceLabel, replaceField, replaceButton, replaceAllButton);
+
+        getChildren().addAll(row1, row2, row3);
 
         // Update status label when result count changes
         resultCount.addListener((obs, oldVal, newVal) -> {
@@ -202,5 +242,29 @@ public class SearchPanel extends VBox {
 
     public TextField getSearchField() {
         return searchField;
+    }
+
+    public TextField getReplaceField() {
+        return replaceField;
+    }
+
+    public StringProperty replaceTextProperty() {
+        return replaceText;
+    }
+
+    public String getReplaceText() {
+        return replaceText.get();
+    }
+
+    public void setOnReplace(Runnable handler) {
+        this.onReplace = handler;
+    }
+
+    public void setOnReplaceAll(Runnable handler) {
+        this.onReplaceAll = handler;
+    }
+
+    public void setReplaceStatus(String status) {
+        statusLabel.setText(status);
     }
 }

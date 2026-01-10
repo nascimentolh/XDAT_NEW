@@ -643,3 +643,70 @@
     -fx-font-size: 11px;
     -fx-font-family: 'Monospace';
 }
+
+/* ===== Drag and Drop Styles ===== */
+.tree-cell.drag-over {
+    -fx-background-color: rgba(74, 158, 255, 0.3);
+    -fx-border-color: -fx-accent;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+
+.tree-cell.drag-over-top {
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 2 0 0 0;
+    -fx-border-style: solid;
+    -fx-background-color: transparent;
+    -fx-background-insets: -2 0 0 0;
+    -fx-effect: dropshadow(three-pass-box, -fx-accent, 0, 0, 0, -2);
+}
+
+.tree-cell.drag-over-bottom {
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0 0 2 0;
+    -fx-border-style: solid;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0 0 -2 0;
+    -fx-effect: dropshadow(three-pass-box, -fx-accent, 0, 0, 0, 2);
+}
+
+/* ===== Replace Button Styles ===== */
+.search-panel .replace-button,
+.search-panel .replace-all-button {
+    -fx-padding: 6 12;
+    -fx-font-size: 12px;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+}
+
+.search-panel .replace-button {
+    -fx-background-color: linear-gradient(to bottom, #4a9eff, #3d8ae0);
+    -fx-border-color: #5aafff;
+    -fx-text-fill: white;
+}
+
+.search-panel .replace-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #5aafff, #4a9eff);
+    -fx-border-color: #6bbfff;
+}
+
+.search-panel .replace-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #3d8ae0, #4a9eff);
+}
+
+.search-panel .replace-all-button {
+    -fx-background-color: linear-gradient(to bottom, #ff9800, #e68a00);
+    -fx-border-color: #ffad33;
+    -fx-text-fill: white;
+}
+
+.search-panel .replace-all-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #ffad33, #ff9800);
+    -fx-border-color: #ffc266;
+}
+
+.search-panel .replace-all-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #e68a00, #ff9800);
+}

@@ -32,6 +32,9 @@ import acmi.l2.clientmod.xdat.history.*;
 import acmi.l2.clientmod.xdat.propertyeditor.*;
 import acmi.l2.clientmod.xdat.search.SearchCriteria;
 import acmi.l2.clientmod.xdat.search.SearchPanel;
+import acmi.l2.clientmod.xdat.util.ClipboardManager;
+import acmi.l2.clientmod.xdat.util.ElementCloner;
+import acmi.l2.clientmod.xdat.util.RecentFilesManager;
 import groovy.lang.GroovyClassLoader;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
@@ -143,12 +146,30 @@ public class Controller implements Initializable {
     private MenuItem redoMenuItem;
     @FXML
     private MenuItem historyMenuItem;
+    @FXML
+    private MenuItem copyMenuItem;
+    @FXML
+    private MenuItem cutMenuItem;
+    @FXML
+    private MenuItem pasteMenuItem;
+    @FXML
+    private MenuItem duplicateMenuItem;
+    @FXML
+    private Menu recentFilesMenu;
     private ToggleGroup version = new ToggleGroup();
     private ToggleGroup themeGroup = new ToggleGroup();
     @FXML
     private TabPane tabs;
     @FXML
     private ProgressBar progressBar;
+
+    // Clipboard and recent files managers
+    private ClipboardManager clipboardManager;
+    private RecentFilesManager recentFilesManager;
+
+    // Current selected tree view (for copy/paste operations)
+    private TreeView<Object> currentTreeView;
+    private String currentVersionName;
 
     private ObjectProperty<File> initialDirectory = new SimpleObjectProperty<>(this, "initialDirectory", new File(XdatEditor.getPrefs().get("initialDirectory", System.getProperty("user.dir"))));
     private ObjectProperty<File> xdatFile = new SimpleObjectProperty<>(this, "xdatFile");
@@ -179,6 +200,8 @@ public class Controller implements Initializable {
         interfaceResources = resources;
 
         initializeThemeMenu();
+        initializeClipboard();
+        initializeRecentFiles();
 
         Node scriptingTab = loadScriptTabContent();
 
@@ -305,11 +328,122 @@ public class Controller implements Initializable {
         XdatEditor.getPrefs().put("theme", theme);
     }
 
+    private void initializeClipboard() {
+        clipboardManager = ClipboardManager.getInstance();
+
+        // Bind copy/cut/paste menu items
+        BooleanBinding nullXdatObject = Bindings.isNull(editor.xdatObjectProperty());
+        copyMenuItem.disableProperty().bind(nullXdatObject);
+        cutMenuItem.disableProperty().bind(nullXdatObject);
+        duplicateMenuItem.disableProperty().bind(nullXdatObject);
+        pasteMenuItem.disableProperty().bind(
+                nullXdatObject.or(clipboardManager.hasContentProperty().not())
+        );
+    }
+
+    private void initializeRecentFiles() {
+        recentFilesManager = new RecentFilesManager(XdatEditor.getPrefs());
+        updateRecentFilesMenu();
+
+        // Listen for changes in recent files
+        recentFilesManager.getRecentFiles().addListener((javafx.collections.ListChangeListener<RecentFilesManager.RecentFile>) c -> {
+            updateRecentFilesMenu();
+        });
+    }
+
+    private void updateRecentFilesMenu() {
+        recentFilesMenu.getItems().clear();
+
+        if (recentFilesManager.getRecentFiles().isEmpty()) {
+            MenuItem emptyItem = new MenuItem(interfaceResources.getString("file.recent.empty"));
+            emptyItem.setDisable(true);
+            recentFilesMenu.getItems().add(emptyItem);
+        } else {
+            for (RecentFilesManager.RecentFile recentFile : recentFilesManager.getRecentFiles()) {
+                MenuItem item = new MenuItem(recentFile.toString());
+                item.setOnAction(e -> openRecentFile(recentFile));
+                recentFilesMenu.getItems().add(item);
+            }
+
+            recentFilesMenu.getItems().add(new SeparatorMenuItem());
+
+            MenuItem clearItem = new MenuItem(interfaceResources.getString("file.recent.clear"));
+            clearItem.setOnAction(e -> recentFilesManager.clearRecentFiles());
+            recentFilesMenu.getItems().add(clearItem);
+        }
+    }
+
+    private void openRecentFile(RecentFilesManager.RecentFile recentFile) {
+        if (!recentFile.exists()) {
+            recentFilesManager.removeRecentFile(recentFile.getFile());
+            Dialogs.showException(Alert.AlertType.WARNING, "File not found",
+                    "The file no longer exists: " + recentFile.getPath(), null);
+            return;
+        }
+
+        // Try to find and select the version
+        if (recentFile.getVersionName() != null) {
+            for (Toggle toggle : version.getToggles()) {
+                if (toggle instanceof RadioMenuItem) {
+                    RadioMenuItem menuItem = (RadioMenuItem) toggle;
+                    if (menuItem.getText().equals(recentFile.getVersionName())) {
+                        menuItem.setSelected(true);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Wait for version to be selected, then open file
+        Platform.runLater(() -> {
+            if (editor.getXdatClass() != null) {
+                openFileDirectly(recentFile.getFile());
+            }
+        });
+    }
+
+    private void openFileDirectly(File file) {
+        xdatFile.setValue(file);
+        initialDirectory.setValue(file.getParentFile());
+
+        try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) {
+            int i = Integer.reverseBytes(dis.readInt());
+            if (i < 0 || i > 0xFFFF) {
+                throw new IOException("File seems to be encrypted.");
+            }
+        } catch (IOException e) {
+            Dialogs.showException(Alert.AlertType.ERROR, "Read error", e.getMessage(), e);
+            return;
+        }
+
+        try {
+            IOEntity xdat = editor.getXdatClass().getConstructor().newInstance();
+
+            editor.execute(() -> {
+                CountingInputStream cis = new CountingInputStream(new BufferedInputStream(new FileInputStream(file)));
+                try (InputStream is = cis) {
+                    xdat.read(is);
+                    Platform.runLater(() -> editor.setXdatObject(xdat));
+                } catch (Throwable e) {
+                    String msg = String.format("Read error before offset 0x%x", cis.getCount());
+                    log.log(Level.WARNING, msg, e);
+                    throw new IOException(msg, e);
+                }
+                return null;
+            }, e -> Dialogs.showException(Alert.AlertType.ERROR, "Read error", "Try to choose another version", e));
+        } catch (ReflectiveOperationException e) {
+            String msg = "XDAT class should have empty public constructor";
+            log.log(Level.WARNING, msg, e);
+            Dialogs.showException(Alert.AlertType.ERROR, "ReflectiveOperationException", msg, e);
+        }
+    }
+
     public void registerVersion(String name, String xdatClass) {
         RadioMenuItem menuItem = new RadioMenuItem(name);
         menuItem.setMnemonicParsing(false);
         menuItem.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
+                currentVersionName = name;
                 editor.execute(() -> {
                     Class<? extends IOEntity> clazz = Class.forName(xdatClass, true, new GroovyClassLoader(getClass().getClassLoader())).asSubclass(IOEntity.class);
                     Platform.runLater(() -> editor.setXdatClass(clazz));
@@ -367,6 +501,10 @@ public class Controller implements Initializable {
         TreeView<Object> elements = createTreeView(listField, searchPanel);
         VBox.setVgrow(elements, Priority.ALWAYS);
         PropertySheet properties = createPropertySheet(elements);
+
+        // Setup replace handlers
+        searchPanel.setOnReplace(() -> replaceSelected(elements, searchPanel));
+        searchPanel.setOnReplaceAll(() -> replaceAll(listField, searchPanel));
 
         pane.getItems().addAll(new VBox(searchPanel, elements), properties);
         pane.setDividerPositions(0.3);
@@ -430,6 +568,19 @@ public class Controller implements Initializable {
         elements.setShowRoot(false);
         elements.setContextMenu(createContextMenu(elements));
 
+        // Track current tree view for copy/paste operations
+        elements.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                currentTreeView = elements;
+            }
+        });
+        elements.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            currentTreeView = elements;
+        });
+
+        // Enable drag and drop for reordering
+        setupDragAndDrop(elements);
+
         // Create invalidation listener that rebuilds tree with search criteria
         InvalidationListener treeInvalidation = (observable) -> {
             SearchCriteria criteria = new SearchCriteria(
@@ -452,6 +603,218 @@ public class Controller implements Initializable {
         searchPanel.useRegexProperty().addListener(treeInvalidation);
 
         return elements;
+    }
+
+    private void setupDragAndDrop(TreeView<Object> treeView) {
+        treeView.setCellFactory(tv -> {
+            TreeCell<Object> cell = new TreeCell<Object>() {
+                @Override
+                protected void updateItem(Object item, boolean empty) {
+                    super.updateItem(item, empty);
+
+                    // Remove drag-over style
+                    getStyleClass().removeAll("drag-over-top", "drag-over-bottom", "drag-over");
+
+                    if (item == null || empty) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        setText(item.toString());
+                        if (UIEntity.class.isAssignableFrom(item.getClass())) {
+                            try (InputStream is = getClass().getResourceAsStream("/acmi/l2/clientmod/xdat/nodeicons/" +
+                                    UI_NODE_ICONS.getOrDefault(item.getClass().getSimpleName(), UI_NODE_ICON_DEFAULT))) {
+                                setGraphic(new ImageView(new Image(is)));
+                            } catch (IOException ignore) {}
+                        }
+                    }
+                }
+            };
+
+            // Drag detected - start drag
+            cell.setOnDragDetected(event -> {
+                if (cell.getItem() == null || cell.getItem() instanceof ListHolder) {
+                    return;
+                }
+
+                TreeItem<Object> draggedItem = cell.getTreeItem();
+                if (draggedItem == null || draggedItem.getParent() == null ||
+                        !(draggedItem.getParent().getValue() instanceof ListHolder)) {
+                    return;
+                }
+
+                javafx.scene.input.Dragboard db = cell.startDragAndDrop(javafx.scene.input.TransferMode.MOVE);
+                javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                content.putString(String.valueOf(System.identityHashCode(draggedItem)));
+                db.setContent(content);
+                event.consume();
+            });
+
+            // Drag over - show drop indicator
+            cell.setOnDragOver(event -> {
+                if (event.getGestureSource() != cell && event.getDragboard().hasString()) {
+                    TreeItem<Object> targetItem = cell.getTreeItem();
+                    if (targetItem != null && canDropOn(treeView, targetItem)) {
+                        event.acceptTransferModes(javafx.scene.input.TransferMode.MOVE);
+
+                        // Show drop position indicator
+                        cell.getStyleClass().removeAll("drag-over-top", "drag-over-bottom", "drag-over");
+                        double cellHeight = cell.getHeight();
+                        double y = event.getY();
+                        if (y < cellHeight * 0.25) {
+                            cell.getStyleClass().add("drag-over-top");
+                        } else if (y > cellHeight * 0.75) {
+                            cell.getStyleClass().add("drag-over-bottom");
+                        } else {
+                            cell.getStyleClass().add("drag-over");
+                        }
+                    }
+                }
+                event.consume();
+            });
+
+            // Drag exited - remove indicator
+            cell.setOnDragExited(event -> {
+                cell.getStyleClass().removeAll("drag-over-top", "drag-over-bottom", "drag-over");
+                event.consume();
+            });
+
+            // Drop - perform the move
+            cell.setOnDragDropped(event -> {
+                javafx.scene.input.Dragboard db = event.getDragboard();
+                boolean success = false;
+
+                if (db.hasString()) {
+                    TreeItem<Object> draggedItem = treeView.getSelectionModel().getSelectedItem();
+                    TreeItem<Object> targetItem = cell.getTreeItem();
+
+                    if (draggedItem != null && targetItem != null && draggedItem != targetItem) {
+                        success = performDrop(treeView, draggedItem, targetItem, cell, event.getY());
+                    }
+                }
+
+                event.setDropCompleted(success);
+                event.consume();
+            });
+
+            // Drag done
+            cell.setOnDragDone(event -> {
+                cell.getStyleClass().removeAll("drag-over-top", "drag-over-bottom", "drag-over");
+                event.consume();
+            });
+
+            return cell;
+        });
+    }
+
+    private boolean canDropOn(TreeView<Object> treeView, TreeItem<Object> targetItem) {
+        TreeItem<Object> draggedItem = treeView.getSelectionModel().getSelectedItem();
+        if (draggedItem == null || targetItem == null) {
+            return false;
+        }
+
+        // Cannot drop on itself
+        if (draggedItem == targetItem) {
+            return false;
+        }
+
+        // Cannot drop on descendants
+        TreeItem<Object> parent = targetItem.getParent();
+        while (parent != null) {
+            if (parent == draggedItem) {
+                return false;
+            }
+            parent = parent.getParent();
+        }
+
+        // Can drop if target is in same list or target is a compatible ListHolder
+        if (targetItem.getValue() instanceof ListHolder) {
+            ListHolder targetHolder = (ListHolder) targetItem.getValue();
+            Object draggedValue = draggedItem.getValue();
+            return targetHolder.type.isAssignableFrom(draggedValue.getClass());
+        }
+
+        if (targetItem.getParent() != null && targetItem.getParent().getValue() instanceof ListHolder) {
+            // Same parent list - reordering
+            if (draggedItem.getParent() == targetItem.getParent()) {
+                return true;
+            }
+            // Different parent but compatible types
+            ListHolder targetHolder = (ListHolder) targetItem.getParent().getValue();
+            Object draggedValue = draggedItem.getValue();
+            return targetHolder.type.isAssignableFrom(draggedValue.getClass());
+        }
+
+        return false;
+    }
+
+    private boolean performDrop(TreeView<Object> treeView, TreeItem<Object> draggedItem,
+                                TreeItem<Object> targetItem, TreeCell<Object> cell, double y) {
+        Object draggedValue = draggedItem.getValue();
+        if (!(draggedValue instanceof IOEntity)) {
+            return false;
+        }
+
+        IOEntity draggedEntity = (IOEntity) draggedValue;
+        TreeItem<Object> sourceParent = draggedItem.getParent();
+
+        if (!(sourceParent.getValue() instanceof ListHolder)) {
+            return false;
+        }
+
+        ListHolder sourceHolder = (ListHolder) sourceParent.getValue();
+        int sourceIndex = sourceHolder.list.indexOf(draggedEntity);
+
+        // Determine target list and index
+        TreeItem<Object> targetParent;
+        ListHolder targetHolder;
+        int targetIndex;
+
+        if (targetItem.getValue() instanceof ListHolder) {
+            // Dropping into a list
+            targetParent = targetItem;
+            targetHolder = (ListHolder) targetItem.getValue();
+            targetIndex = targetHolder.list.size();
+        } else if (targetItem.getParent() != null && targetItem.getParent().getValue() instanceof ListHolder) {
+            // Dropping relative to a sibling
+            targetParent = targetItem.getParent();
+            targetHolder = (ListHolder) targetParent.getValue();
+
+            double cellHeight = cell.getHeight();
+            int siblingIndex = targetHolder.list.indexOf(targetItem.getValue());
+
+            if (y < cellHeight * 0.5) {
+                targetIndex = siblingIndex;
+            } else {
+                targetIndex = siblingIndex + 1;
+            }
+        } else {
+            return false;
+        }
+
+        // Check type compatibility
+        if (!targetHolder.type.isAssignableFrom(draggedEntity.getClass())) {
+            return false;
+        }
+
+        // Create and execute move command
+        MoveElementCommand command = new MoveElementCommand(
+                sourceHolder.list, targetHolder.list,
+                sourceParent, targetParent,
+                draggedEntity, draggedItem,
+                sourceIndex, targetIndex
+        );
+
+        // Execute the move
+        command.execute();
+
+        // Record for undo
+        editor.getUndoManager().record(command);
+
+        // Select the moved item
+        treeView.getSelectionModel().select(draggedItem);
+
+        log.info("Moved element: " + draggedEntity + " from index " + sourceIndex + " to " + targetIndex);
+        return true;
     }
 
     private static int buildTree(IOEntity entity, Field listField, TreeView<Object> elements, SearchCriteria criteria) {
@@ -845,7 +1208,11 @@ public class Controller implements Initializable {
                 try (InputStream is = cis) {
                     xdat.read(is);
 
-                    Platform.runLater(() -> editor.setXdatObject(xdat));
+                    Platform.runLater(() -> {
+                        editor.setXdatObject(xdat);
+                        // Add to recent files
+                        recentFilesManager.addRecentFile(selected, currentVersionName);
+                    });
                 } catch (Throwable e) {
                     String msg = String.format("Read error before offset 0x%x", cis.getCount());
                     log.log(Level.WARNING, msg, e);
@@ -885,6 +1252,376 @@ public class Controller implements Initializable {
     @FXML
     private void redo() {
         editor.getUndoManager().redo();
+    }
+
+    @FXML
+    private void copyElement() {
+        TreeItem<Object> selected = getSelectedTreeItem();
+        if (selected == null || selected.getValue() instanceof ListHolder) {
+            return;
+        }
+
+        Object value = selected.getValue();
+        if (value instanceof IOEntity) {
+            clipboardManager.copy((IOEntity) value);
+            log.info("Copied element: " + value);
+        }
+    }
+
+    @FXML
+    private void cutElement() {
+        TreeItem<Object> selected = getSelectedTreeItem();
+        if (selected == null || selected.getValue() instanceof ListHolder) {
+            return;
+        }
+
+        Object value = selected.getValue();
+        if (value instanceof IOEntity && selected.getParent() != null &&
+                selected.getParent().getValue() instanceof ListHolder) {
+
+            clipboardManager.cut((IOEntity) value);
+
+            // Store info for deletion on paste
+            log.info("Cut element: " + value);
+        }
+    }
+
+    @FXML
+    private void pasteElement() {
+        if (!clipboardManager.hasContent()) {
+            return;
+        }
+
+        TreeItem<Object> selected = getSelectedTreeItem();
+        TreeItem<Object> targetParent = null;
+        ListHolder listHolder = null;
+
+        // Determine where to paste
+        if (selected == null) {
+            // Paste to root if nothing selected
+            if (currentTreeView != null && currentTreeView.getRoot() != null) {
+                targetParent = currentTreeView.getRoot();
+                if (targetParent.getValue() instanceof ListHolder) {
+                    listHolder = (ListHolder) targetParent.getValue();
+                }
+            }
+        } else if (selected.getValue() instanceof ListHolder) {
+            targetParent = selected;
+            listHolder = (ListHolder) selected.getValue();
+        } else if (selected.getParent() != null && selected.getParent().getValue() instanceof ListHolder) {
+            targetParent = selected.getParent();
+            listHolder = (ListHolder) targetParent.getValue();
+        }
+
+        if (listHolder == null || targetParent == null) {
+            return;
+        }
+
+        // Check type compatibility
+        Class<? extends IOEntity> clipboardClass = clipboardManager.getContentClass();
+        if (clipboardClass != null && !listHolder.type.isAssignableFrom(clipboardClass)) {
+            Dialogs.showException(Alert.AlertType.WARNING,
+                    interfaceResources.getString("clipboard.incompatible"),
+                    "Cannot paste " + clipboardClass.getSimpleName() + " into " + listHolder.type.getSimpleName(),
+                    null);
+            return;
+        }
+
+        // Perform paste
+        IOEntity pastedElement = clipboardManager.paste();
+        if (pastedElement != null) {
+            // Create a fresh clone for paste
+            IOEntity elementToAdd = ElementCloner.deepClone(pastedElement);
+            if (elementToAdd == null) {
+                elementToAdd = pastedElement;
+            }
+
+            int index = listHolder.list.size();
+            listHolder.list.add(elementToAdd);
+            TreeItem<Object> newTreeItem = createTreeItem(elementToAdd);
+            targetParent.getChildren().add(newTreeItem);
+
+            // Record command for undo
+            PasteElementCommand command = new PasteElementCommand(
+                    listHolder.list, targetParent, elementToAdd, newTreeItem, index);
+            editor.getUndoManager().record(command);
+
+            // Select the pasted element
+            if (currentTreeView != null) {
+                currentTreeView.getSelectionModel().select(newTreeItem);
+                currentTreeView.scrollTo(currentTreeView.getSelectionModel().getSelectedIndex());
+            }
+
+            editor.getHistory().valueCreated(treeItemToScriptString(targetParent), elementToAdd.getClass());
+            log.info("Pasted element: " + elementToAdd);
+        }
+    }
+
+    @FXML
+    private void duplicateElement() {
+        TreeItem<Object> selected = getSelectedTreeItem();
+        if (selected == null || selected.getValue() instanceof ListHolder) {
+            return;
+        }
+
+        Object value = selected.getValue();
+        if (value instanceof IOEntity && selected.getParent() != null &&
+                selected.getParent().getValue() instanceof ListHolder) {
+
+            ListHolder listHolder = (ListHolder) selected.getParent().getValue();
+
+            // Clone the element
+            IOEntity clone = ElementCloner.deepClone((IOEntity) value);
+            if (clone == null) {
+                return;
+            }
+
+            // Find index and insert after current element
+            int currentIndex = listHolder.list.indexOf(value);
+            int newIndex = currentIndex + 1;
+
+            listHolder.list.add(newIndex, clone);
+            TreeItem<Object> newTreeItem = createTreeItem(clone);
+            selected.getParent().getChildren().add(newIndex, newTreeItem);
+
+            // Record command for undo
+            PasteElementCommand command = new PasteElementCommand(
+                    listHolder.list, selected.getParent(), clone, newTreeItem, newIndex);
+            editor.getUndoManager().record(command);
+
+            // Select the duplicated element
+            if (currentTreeView != null) {
+                currentTreeView.getSelectionModel().select(newTreeItem);
+                currentTreeView.scrollTo(currentTreeView.getSelectionModel().getSelectedIndex());
+            }
+
+            editor.getHistory().valueCreated(treeItemToScriptString(selected.getParent()), clone.getClass());
+            log.info("Duplicated element: " + clone);
+        }
+    }
+
+    private TreeItem<Object> getSelectedTreeItem() {
+        if (currentTreeView == null) {
+            return null;
+        }
+        return currentTreeView.getSelectionModel().getSelectedItem();
+    }
+
+    private void replaceSelected(TreeView<Object> treeView, SearchPanel searchPanel) {
+        String searchText = searchPanel.getSearchText();
+        String replaceText = searchPanel.getReplaceText();
+        String propertyFilter = searchPanel.getSelectedProperty();
+
+        if (searchText.isEmpty()) {
+            searchPanel.setReplaceStatus(interfaceResources.getString("search.no_matches"));
+            return;
+        }
+
+        TreeItem<Object> selected = treeView.getSelectionModel().getSelectedItem();
+        if (selected == null || selected.getValue() instanceof ListHolder) {
+            searchPanel.setReplaceStatus(interfaceResources.getString("search.no_matches"));
+            return;
+        }
+
+        Object item = selected.getValue();
+        int count = replaceInObject(item, searchText, replaceText, propertyFilter, searchPanel.isUseRegex());
+
+        if (count > 0) {
+            searchPanel.setReplaceStatus(String.format(interfaceResources.getString("search.replaced"), count));
+            // Refresh tree view
+            treeView.refresh();
+        } else {
+            searchPanel.setReplaceStatus(interfaceResources.getString("search.no_matches"));
+        }
+    }
+
+    private void replaceAll(Field listField, SearchPanel searchPanel) {
+        String searchText = searchPanel.getSearchText();
+        String replaceText = searchPanel.getReplaceText();
+        String propertyFilter = searchPanel.getSelectedProperty();
+        String typeFilter = searchPanel.getSelectedType();
+
+        if (searchText.isEmpty()) {
+            searchPanel.setReplaceStatus(interfaceResources.getString("search.no_matches"));
+            return;
+        }
+
+        IOEntity xdatObject = editor.xdatObjectProperty().get();
+        if (xdatObject == null) {
+            return;
+        }
+
+        BatchReplaceCommand batchCommand = new BatchReplaceCommand(searchText, replaceText);
+
+        try {
+            @SuppressWarnings("unchecked")
+            List<IOEntity> list = (List<IOEntity>) listField.get(xdatObject);
+
+            for (IOEntity entity : list) {
+                replaceInEntityRecursive(entity, searchText, replaceText, propertyFilter, typeFilter,
+                        searchPanel.isUseRegex(), batchCommand);
+            }
+
+            if (batchCommand.hasReplacements()) {
+                // Execute and record for undo
+                batchCommand.execute();
+                editor.getUndoManager().record(batchCommand);
+
+                searchPanel.setReplaceStatus(String.format(
+                        interfaceResources.getString("search.replaced"),
+                        batchCommand.getReplacementCount()));
+
+                // Refresh the current tree view
+                if (currentTreeView != null) {
+                    currentTreeView.refresh();
+                }
+            } else {
+                searchPanel.setReplaceStatus(interfaceResources.getString("search.no_matches"));
+            }
+
+        } catch (IllegalAccessException e) {
+            log.log(Level.WARNING, "Failed to access list field", e);
+        }
+    }
+
+    private int replaceInObject(Object item, String searchText, String replaceText,
+                                String propertyFilter, boolean useRegex) {
+        int count = 0;
+        String[] propsToCheck;
+
+        if (propertyFilter != null && !propertyFilter.isEmpty()) {
+            propsToCheck = new String[]{propertyFilter};
+        } else {
+            propsToCheck = new String[]{"name", "text", "buttonNameText", "titleText", "file",
+                    "normalTex", "backTex", "fontName", "styleName"};
+        }
+
+        BatchReplaceCommand batchCommand = new BatchReplaceCommand(searchText, replaceText);
+
+        for (String propName : propsToCheck) {
+            try {
+                Field field = findField(item.getClass(), propName);
+                if (field != null && field.getType() == String.class) {
+                    field.setAccessible(true);
+                    String value = (String) field.get(item);
+                    if (value != null) {
+                        String newValue = performReplace(value, searchText, replaceText, useRegex);
+                        if (!newValue.equals(value)) {
+                            batchCommand.addReplacement(item, field, value, newValue);
+                            count++;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (batchCommand.hasReplacements()) {
+            batchCommand.execute();
+            editor.getUndoManager().record(batchCommand);
+        }
+
+        return count;
+    }
+
+    private void replaceInEntityRecursive(Object entity, String searchText, String replaceText,
+                                          String propertyFilter, String typeFilter, boolean useRegex,
+                                          BatchReplaceCommand batchCommand) {
+        if (entity == null) {
+            return;
+        }
+
+        // Check type filter
+        if (typeFilter != null && !typeFilter.isEmpty()) {
+            if (!entity.getClass().getSimpleName().equals(typeFilter)) {
+                // Still process children
+                processChildEntities(entity, searchText, replaceText, propertyFilter, typeFilter, useRegex, batchCommand);
+                return;
+            }
+        }
+
+        // Process properties of this entity
+        String[] propsToCheck;
+        if (propertyFilter != null && !propertyFilter.isEmpty()) {
+            propsToCheck = new String[]{propertyFilter};
+        } else {
+            propsToCheck = new String[]{"name", "text", "buttonNameText", "titleText", "file",
+                    "normalTex", "backTex", "fontName", "styleName"};
+        }
+
+        for (String propName : propsToCheck) {
+            try {
+                Field field = findField(entity.getClass(), propName);
+                if (field != null && field.getType() == String.class) {
+                    field.setAccessible(true);
+                    String value = (String) field.get(entity);
+                    if (value != null) {
+                        String newValue = performReplace(value, searchText, replaceText, useRegex);
+                        if (!newValue.equals(value)) {
+                            batchCommand.addReplacement(entity, field, value, newValue);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        // Process child entities
+        processChildEntities(entity, searchText, replaceText, propertyFilter, typeFilter, useRegex, batchCommand);
+    }
+
+    private void processChildEntities(Object entity, String searchText, String replaceText,
+                                      String propertyFilter, String typeFilter, boolean useRegex,
+                                      BatchReplaceCommand batchCommand) {
+        Class<?> clazz = entity.getClass();
+        while (clazz != null && clazz != Object.class) {
+            for (Field field : clazz.getDeclaredFields()) {
+                if (field.isSynthetic() || Modifier.isStatic(field.getModifiers())) {
+                    continue;
+                }
+
+                field.setAccessible(true);
+                try {
+                    Object value = field.get(entity);
+                    if (value instanceof List) {
+                        for (Object item : (List<?>) value) {
+                            if (item instanceof IOEntity) {
+                                replaceInEntityRecursive(item, searchText, replaceText,
+                                        propertyFilter, typeFilter, useRegex, batchCommand);
+                            }
+                        }
+                    } else if (value instanceof IOEntity) {
+                        replaceInEntityRecursive(value, searchText, replaceText,
+                                propertyFilter, typeFilter, useRegex, batchCommand);
+                    }
+                } catch (IllegalAccessException ignored) {
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
+    }
+
+    private Field findField(Class<?> clazz, String fieldName) {
+        while (clazz != null && clazz != Object.class) {
+            try {
+                return clazz.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) {
+                clazz = clazz.getSuperclass();
+            }
+        }
+        return null;
+    }
+
+    private String performReplace(String value, String searchText, String replaceText, boolean useRegex) {
+        if (useRegex) {
+            try {
+                return value.replaceAll(searchText, replaceText);
+            } catch (Exception e) {
+                return value;
+            }
+        } else {
+            return value.replace(searchText, replaceText);
+        }
     }
 
     @FXML

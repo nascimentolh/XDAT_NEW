@@ -48,6 +48,8 @@
                         <Menu text="%file" mnemonicParsing="false">
                             <items>
                                 <MenuItem fx:id="open" onAction="#open" text="%file.open" accelerator="CTRL+O" mnemonicParsing="false"/>
+                                <Menu fx:id="recentFilesMenu" text="%file.recent" mnemonicParsing="false"/>
+                                <SeparatorMenuItem/>
                                 <MenuItem fx:id="save" onAction="#save" text="%file.save" accelerator="CTRL+S" mnemonicParsing="false"/>
                                 <MenuItem fx:id="saveAs" onAction="#saveAs" text="%file.save_as" accelerator="CTRL+ALT+S" mnemonicParsing="false"/>
                                 <SeparatorMenuItem/>
@@ -58,6 +60,11 @@
                             <items>
                                 <MenuItem fx:id="undoMenuItem" onAction="#undo" text="%edit.undo" accelerator="CTRL+Z" mnemonicParsing="false"/>
                                 <MenuItem fx:id="redoMenuItem" onAction="#redo" text="%edit.redo" accelerator="CTRL+Y" mnemonicParsing="false"/>
+                                <SeparatorMenuItem/>
+                                <MenuItem fx:id="copyMenuItem" onAction="#copyElement" text="%edit.copy" accelerator="CTRL+C" mnemonicParsing="false"/>
+                                <MenuItem fx:id="cutMenuItem" onAction="#cutElement" text="%edit.cut" accelerator="CTRL+X" mnemonicParsing="false"/>
+                                <MenuItem fx:id="pasteMenuItem" onAction="#pasteElement" text="%edit.paste" accelerator="CTRL+V" mnemonicParsing="false"/>
+                                <MenuItem fx:id="duplicateMenuItem" onAction="#duplicateElement" text="%edit.duplicate" accelerator="CTRL+D" mnemonicParsing="false"/>
                                 <SeparatorMenuItem/>
                                 <MenuItem fx:id="historyMenuItem" onAction="#showHistory" text="%edit.history" mnemonicParsing="false"/>
                             </items>
