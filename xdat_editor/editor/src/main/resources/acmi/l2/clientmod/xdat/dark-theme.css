@@ -550,3 +550,64 @@
 .properties-grid .value {
     -fx-text-fill: -fx-dark-text-color;
 }
+
+/* ===== Search Panel ===== */
+.search-panel {
+    -fx-background-color: #252525;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 10;
+}
+
+.search-panel .search-field {
+    -fx-pref-height: 32;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+
+.search-panel .search-field.error {
+    -fx-border-color: -xdat-error-color;
+    -fx-effect: dropshadow(gaussian, rgba(244, 67, 54, 0.3), 6, 0, 0, 0);
+}
+
+.search-panel .clear-button {
+    -fx-padding: 6 12;
+    -fx-font-size: 12px;
+}
+
+.search-panel .search-status {
+    -fx-text-fill: -fx-light-text-color;
+    -fx-font-size: 12px;
+    -fx-alignment: center-right;
+}
+
+/* ===== Search Match Highlight ===== */
+.tree-cell.search-match {
+    -fx-background-color: rgba(255, 213, 79, 0.25);
+    -fx-border-color: #ffd54f;
+    -fx-border-width: 0 0 0 3;
+    -fx-font-weight: bold;
+}
+
+.tree-cell.search-match:selected {
+    -fx-background-color: linear-gradient(to right, rgba(255, 213, 79, 0.35), -fx-selection-bar);
+}
+
+.tree-cell.search-match:hover:filled {
+    -fx-background-color: rgba(255, 213, 79, 0.35);
+}
+
+/* Parent of matching items - subtle highlight */
+.tree-cell.search-match-parent {
+    -fx-background-color: rgba(255, 213, 79, 0.1);
+    -fx-border-color: rgba(255, 213, 79, 0.4);
+    -fx-border-width: 0 0 0 2;
+}
+
+.tree-cell.search-match-parent:selected {
+    -fx-background-color: linear-gradient(to right, rgba(255, 213, 79, 0.15), -fx-selection-bar);
+}
+
+.tree-cell.search-match-parent:hover:filled {
+    -fx-background-color: rgba(255, 213, 79, 0.15);
+}

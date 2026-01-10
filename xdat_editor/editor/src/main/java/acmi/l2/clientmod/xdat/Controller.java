@@ -29,6 +29,8 @@ import acmi.l2.clientmod.l2resources.Tex;
 import acmi.l2.clientmod.unreal.Environment;
 import acmi.l2.clientmod.util.*;
 import acmi.l2.clientmod.xdat.propertyeditor.*;
+import acmi.l2.clientmod.xdat.search.SearchCriteria;
+import acmi.l2.clientmod.xdat.search.SearchPanel;
 import groovy.lang.GroovyClassLoader;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
@@ -324,13 +326,19 @@ public class Controller implements Initializable {
 
         SplitPane pane = new SplitPane();
 
-        TextField filter = TextFields.createClearableTextField();
-        VBox.setMargin(filter, new Insets(2));
-        TreeView<Object> elements = createTreeView(listField, filter.textProperty());
+        // Create advanced search panel
+        SearchPanel searchPanel = new SearchPanel(interfaceResources);
+        searchPanel.setComponentTypes(new ArrayList<>(UI_NODE_ICONS.keySet()));
+        searchPanel.setPropertyNames(Arrays.asList(
+                "name", "text", "buttonNameText", "titleText", "file",
+                "normalTex", "backTex", "fontName", "styleName"
+        ));
+
+        TreeView<Object> elements = createTreeView(listField, searchPanel);
         VBox.setVgrow(elements, Priority.ALWAYS);
         PropertySheet properties = createPropertySheet(elements);
 
-        pane.getItems().addAll(new VBox(filter, elements), properties);
+        pane.getItems().addAll(new VBox(searchPanel, elements), properties);
         pane.setDividerPositions(0.3);
 
         tab.setContent(wrap(pane));
@@ -338,12 +346,15 @@ public class Controller implements Initializable {
         return tab;
     }
 
-    private TreeView<Object> createTreeView(Field listField, ObservableValue<String> filter) {
+    private TreeView<Object> createTreeView(Field listField, SearchPanel searchPanel) {
         TreeView<Object> elements = new TreeView<>();
         elements.setCellFactory(param -> new TreeCell<Object>() {
             @Override
             protected void updateItem(Object item, boolean empty) {
                 super.updateItem(item, empty);
+
+                // Remove highlight classes first
+                getStyleClass().removeAll("search-match", "search-match-parent");
 
                 if (item == null || empty) {
                     setText(null);
@@ -355,26 +366,71 @@ public class Controller implements Initializable {
                             setGraphic(new ImageView(new Image(is)));
                         } catch (IOException ignore) {}
                     }
+
+                    // Apply highlight if item matches search criteria
+                    if (searchPanel.hasActiveFilters()) {
+                        SearchCriteria criteria = new SearchCriteria(
+                                searchPanel.getSearchText(),
+                                searchPanel.getSelectedType(),
+                                searchPanel.getSelectedProperty(),
+                                searchPanel.isUseRegex()
+                        );
+                        if (criteria.matches(item)) {
+                            getStyleClass().add("search-match");
+                        } else if (getTreeItem() != null && hasMatchingDescendant(getTreeItem(), criteria)) {
+                            // Parent has matching children - highlight as parent
+                            getStyleClass().add("search-match-parent");
+                        }
+                    }
                 }
+            }
+
+            private boolean hasMatchingDescendant(TreeItem<Object> treeItem, SearchCriteria criteria) {
+                for (TreeItem<Object> child : treeItem.getChildren()) {
+                    if (criteria.matches(child.getValue())) {
+                        return true;
+                    }
+                    if (hasMatchingDescendant(child, criteria)) {
+                        return true;
+                    }
+                }
+                return false;
             }
         });
         elements.setShowRoot(false);
         elements.setContextMenu(createContextMenu(elements));
 
-        InvalidationListener treeInvalidation = (observable) -> buildTree(editor.xdatObjectProperty().get(), listField, elements, filter.getValue());
+        // Create invalidation listener that rebuilds tree with search criteria
+        InvalidationListener treeInvalidation = (observable) -> {
+            SearchCriteria criteria = new SearchCriteria(
+                    searchPanel.getSearchText(),
+                    searchPanel.getSelectedType(),
+                    searchPanel.getSelectedProperty(),
+                    searchPanel.isUseRegex()
+            );
+            int resultCount = buildTree(editor.xdatObjectProperty().get(), listField, elements, criteria);
+            searchPanel.setResultCount(resultCount);
+        };
+
         editor.xdatObjectProperty().addListener(treeInvalidation);
         xdatListeners.add(treeInvalidation);
 
-        filter.addListener(treeInvalidation);
+        // Listen to all search panel properties
+        searchPanel.searchTextProperty().addListener(treeInvalidation);
+        searchPanel.selectedTypeProperty().addListener(treeInvalidation);
+        searchPanel.selectedPropertyProperty().addListener(treeInvalidation);
+        searchPanel.useRegexProperty().addListener(treeInvalidation);
 
         return elements;
     }
 
-    private static void buildTree(IOEntity entity, Field listField, TreeView<Object> elements, String nameFilter) {
+    private static int buildTree(IOEntity entity, Field listField, TreeView<Object> elements, SearchCriteria criteria) {
         elements.setRoot(null);
 
         if (entity == null)
-            return;
+            return 0;
+
+        int[] resultCount = {0};
 
         try {
             @SuppressWarnings("unchecked")
@@ -389,32 +445,44 @@ public class Controller implements Initializable {
 
                 elements.setRoot(rootItem);
 
-                rootItem.getChildren().addAll(
-                        list.stream()
-                                .map(Controller::createTreeItem)
-                                .filter(treeItem -> checkTreeNode(treeItem, nameFilter))
-                                .collect(Collectors.toList()));
+                List<TreeItem<Object>> filteredItems = list.stream()
+                        .map(Controller::createTreeItem)
+                        .filter(treeItem -> checkTreeNode(treeItem, criteria, resultCount))
+                        .collect(Collectors.toList());
+
+                rootItem.getChildren().addAll(filteredItems);
             }
         } catch (IllegalAccessException e) {
             String msg = String.format("%s.%s is not accessible", listField.getDeclaringClass().getSimpleName(), listField.getName());
             log.log(Level.WARNING, msg, e);
             Dialogs.showException(Alert.AlertType.ERROR, "ReflectiveOperationException", msg, e);
         }
+
+        return resultCount[0];
     }
 
-    private static boolean checkTreeNode(TreeItem<Object> treeItem, String nameFilter) {
-        if (checkName(Objects.toString(treeItem.getValue()), nameFilter))
-            return true;
+    private static boolean checkTreeNode(TreeItem<Object> treeItem, SearchCriteria criteria, int[] resultCount) {
+        Object value = treeItem.getValue();
 
-        for (TreeItem<Object> childItem : treeItem.getChildren())
-            if (checkTreeNode(childItem, nameFilter))
+        // If no active filters, show all
+        if (criteria.isEmpty()) {
+            return true;
+        }
+
+        // Check if this item matches
+        if (criteria.matches(value)) {
+            resultCount[0]++;
+            return true;
+        }
+
+        // Check if any child matches
+        for (TreeItem<Object> childItem : treeItem.getChildren()) {
+            if (checkTreeNode(childItem, criteria, resultCount)) {
                 return true;
+            }
+        }
 
         return false;
-    }
-
-    private static boolean checkName(String s, String nameFilter) {
-        return s.toLowerCase().contains(nameFilter.toLowerCase());
     }
 
     private ContextMenu createContextMenu(TreeView<Object> elements) {
