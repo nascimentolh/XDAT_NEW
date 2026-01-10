@@ -61,7 +61,7 @@ import java.util.prefs.Preferences;
 public class XdatEditor extends Application {
     private static final Logger log = Logger.getLogger(XdatEditor.class.getName());
 
-    private ResourceBundle interfaceResources = ResourceBundle.getBundle("acmi.l2.clientmod.xdat.interface", Locale.getDefault(), getClass().getClassLoader());
+    private ResourceBundle interfaceResources = loadResourceBundle();
 
     private Stage stage;
 
@@ -256,5 +256,26 @@ public class XdatEditor extends Application {
 
     private static Preferences windowPrefs() {
         return getPrefs().node("window");
+    }
+
+    private ResourceBundle loadResourceBundle() {
+        String language = getPrefs().get("language", "en");
+        Locale locale;
+
+        switch (language) {
+            case "pt_BR":
+                locale = Locale.of("pt", "BR");
+                break;
+            case "es_AR":
+                locale = Locale.of("es", "AR");
+                break;
+            case "ru":
+                locale = Locale.of("ru");
+                break;
+            default:
+                locale = Locale.ENGLISH;
+        }
+
+        return ResourceBundle.getBundle("acmi.l2.clientmod.xdat.interface", locale, getClass().getClassLoader());
     }
 }

@@ -156,8 +156,11 @@ public class Controller implements Initializable {
     private MenuItem duplicateMenuItem;
     @FXML
     private Menu recentFilesMenu;
+    @FXML
+    private Menu languageMenu;
     private ToggleGroup version = new ToggleGroup();
     private ToggleGroup themeGroup = new ToggleGroup();
+    private ToggleGroup languageGroup = new ToggleGroup();
     @FXML
     private TabPane tabs;
     @FXML
@@ -200,6 +203,7 @@ public class Controller implements Initializable {
         interfaceResources = resources;
 
         initializeThemeMenu();
+        initializeLanguageMenu();
         initializeClipboard();
         initializeRecentFiles();
 
@@ -326,6 +330,54 @@ public class Controller implements Initializable {
 
         scene.getStylesheets().add(cssPath);
         XdatEditor.getPrefs().put("theme", theme);
+    }
+
+    private void initializeLanguageMenu() {
+        String currentLanguage = XdatEditor.getPrefs().get("language", "en");
+
+        // English
+        RadioMenuItem enItem = new RadioMenuItem(interfaceResources.getString("view.language.en"));
+        enItem.setToggleGroup(languageGroup);
+        enItem.setUserData("en");
+        enItem.setSelected("en".equals(currentLanguage));
+        enItem.setOnAction(e -> changeLanguage("en"));
+
+        // Portuguese (Brazil)
+        RadioMenuItem ptBrItem = new RadioMenuItem(interfaceResources.getString("view.language.pt_BR"));
+        ptBrItem.setToggleGroup(languageGroup);
+        ptBrItem.setUserData("pt_BR");
+        ptBrItem.setSelected("pt_BR".equals(currentLanguage));
+        ptBrItem.setOnAction(e -> changeLanguage("pt_BR"));
+
+        // Spanish (Argentina)
+        RadioMenuItem esArItem = new RadioMenuItem(interfaceResources.getString("view.language.es_AR"));
+        esArItem.setToggleGroup(languageGroup);
+        esArItem.setUserData("es_AR");
+        esArItem.setSelected("es_AR".equals(currentLanguage));
+        esArItem.setOnAction(e -> changeLanguage("es_AR"));
+
+        // Russian
+        RadioMenuItem ruItem = new RadioMenuItem(interfaceResources.getString("view.language.ru"));
+        ruItem.setToggleGroup(languageGroup);
+        ruItem.setUserData("ru");
+        ruItem.setSelected("ru".equals(currentLanguage));
+        ruItem.setOnAction(e -> changeLanguage("ru"));
+
+        languageMenu.getItems().addAll(enItem, ptBrItem, esArItem, ruItem);
+    }
+
+    private void changeLanguage(String language) {
+        String currentLanguage = XdatEditor.getPrefs().get("language", "en");
+        if (!language.equals(currentLanguage)) {
+            XdatEditor.getPrefs().put("language", language);
+
+            // Show restart message
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle(interfaceResources.getString("language.restart"));
+            alert.setHeaderText(null);
+            alert.setContentText(interfaceResources.getString("language.restart.message"));
+            alert.showAndWait();
+        }
     }
 
     private void initializeClipboard() {
