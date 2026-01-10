@@ -132,7 +132,9 @@ public class XdatEditor extends Application {
         controller = loader.getController();
 
         primaryStage.setTitle("XDAT Editor");
-        primaryStage.setScene(new Scene(root));
+        Scene scene = new Scene(root);
+        applyInitialTheme(scene);
+        primaryStage.setScene(scene);
         primaryStage.setWidth(Double.parseDouble(windowPrefs().get("width", String.valueOf(primaryStage.getWidth()))));
         primaryStage.setHeight(Double.parseDouble(windowPrefs().get("height", String.valueOf(primaryStage.getHeight()))));
         if (windowPrefs().getBoolean("maximized", primaryStage.isMaximized())) {
@@ -171,6 +173,17 @@ public class XdatEditor extends Application {
             primaryStage.heightProperty().addListener(listener);
         });
         Platform.runLater(this::postShow);
+    }
+
+    private void applyInitialTheme(Scene scene) {
+        String theme = getPrefs().get("theme", "dark");
+        String cssPath;
+        if ("light".equals(theme)) {
+            cssPath = getClass().getResource("light-theme.css").toExternalForm();
+        } else {
+            cssPath = getClass().getResource("dark-theme.css").toExternalForm();
+        }
+        scene.getStylesheets().add(cssPath);
     }
 
     private void postShow() {

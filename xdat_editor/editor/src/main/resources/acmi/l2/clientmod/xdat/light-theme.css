@@ -1,0 +1,553 @@
+/*
+ * XDAT Editor - Light Theme
+ * Modern JavaFX 21 stylesheet
+ */
+
+/* ===== CSS Variables ===== */
+.root {
+    -fx-base: #f5f5f5;
+    -fx-background: #ffffff;
+    -fx-control-inner-background: #ffffff;
+    -fx-control-inner-background-alt: #f8f8f8;
+    -fx-dark-text-color: #1a1a1a;
+    -fx-mid-text-color: #606060;
+    -fx-light-text-color: #909090;
+    -fx-accent: #0078d4;
+    -fx-focus-color: #0078d4;
+    -fx-faint-focus-color: rgba(0, 120, 212, 0.2);
+    -fx-selection-bar: #cce4f7;
+    -fx-selection-bar-non-focused: #e5e5e5;
+
+    /* Custom variables */
+    -xdat-border-color: #d0d0d0;
+    -xdat-hover-color: #f0f0f0;
+    -xdat-pressed-color: #e0e0e0;
+    -xdat-success-color: #4caf50;
+    -xdat-warning-color: #ff9800;
+    -xdat-error-color: #f44336;
+
+    -fx-font-family: 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    -fx-font-size: 13px;
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+/* ===== General Controls ===== */
+.label {
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+.text {
+    -fx-fill: -fx-dark-text-color;
+}
+
+/* ===== Buttons ===== */
+.button {
+    -fx-background-color: linear-gradient(to bottom, #ffffff, #f5f5f5);
+    -fx-background-radius: 6;
+    -fx-border-color: #c0c0c0;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-text-fill: -fx-dark-text-color;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(to bottom, #f8f8f8, #eeeeee);
+    -fx-border-color: #b0b0b0;
+}
+
+.button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #e8e8e8, #f0f0f0);
+    -fx-border-color: -fx-accent;
+}
+
+.button:focused {
+    -fx-border-color: -fx-accent;
+    -fx-effect: dropshadow(gaussian, -fx-faint-focus-color, 8, 0, 0, 0);
+}
+
+.button:default {
+    -fx-background-color: linear-gradient(to bottom, #0078d4, #006cbd);
+    -fx-border-color: #0086ed;
+    -fx-text-fill: white;
+}
+
+.button:default:hover {
+    -fx-background-color: linear-gradient(to bottom, #1a86d9, #0078d4);
+}
+
+/* ===== Menu Bar ===== */
+.menu-bar {
+    -fx-background-color: #f8f8f8;
+    -fx-border-color: transparent transparent -xdat-border-color transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 2 8;
+}
+
+.menu-bar .menu {
+    -fx-padding: 4 8;
+}
+
+.menu-bar .label {
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+.menu-bar .menu:hover,
+.menu-bar .menu:showing {
+    -fx-background-color: -xdat-hover-color;
+    -fx-background-radius: 4;
+}
+
+/* ===== Context Menu & Menu Items ===== */
+.context-menu {
+    -fx-background-color: #ffffff;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 12, 0, 0, 4);
+}
+
+.menu-item {
+    -fx-padding: 8 16;
+    -fx-background-radius: 4;
+}
+
+.menu-item:hover,
+.menu-item:focused {
+    -fx-background-color: -xdat-hover-color;
+}
+
+.menu-item .label {
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+.menu-item:disabled .label {
+    -fx-text-fill: -fx-light-text-color;
+}
+
+.separator:horizontal .line {
+    -fx-border-color: -xdat-border-color;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ===== Tab Pane ===== */
+.tab-pane {
+    -fx-tab-min-height: 36;
+}
+
+.tab-pane .tab-header-area {
+    -fx-padding: 4 8 0 8;
+}
+
+.tab-pane .tab-header-background {
+    -fx-background-color: #f8f8f8;
+    -fx-border-color: transparent transparent -xdat-border-color transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8 8 0 0;
+    -fx-padding: 8 20;
+    -fx-border-color: transparent;
+}
+
+.tab .tab-label {
+    -fx-text-fill: -fx-mid-text-color;
+}
+
+.tab:hover {
+    -fx-background-color: -xdat-hover-color;
+}
+
+.tab:selected {
+    -fx-background-color: #ffffff;
+    -fx-border-color: -xdat-border-color -xdat-border-color transparent -xdat-border-color;
+    -fx-border-width: 1;
+    -fx-border-radius: 8 8 0 0;
+}
+
+.tab:selected .tab-label {
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+.tab:selected .focus-indicator {
+    -fx-border-color: transparent;
+}
+
+/* ===== Tree View ===== */
+.tree-view {
+    -fx-background-color: -fx-control-inner-background;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.tree-view .tree-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 6 8;
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+.tree-view .tree-cell:hover {
+    -fx-background-color: -xdat-hover-color;
+}
+
+.tree-view .tree-cell:selected {
+    -fx-background-color: -fx-selection-bar;
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+.tree-view .tree-cell:selected:focused {
+    -fx-background-color: -fx-selection-bar;
+}
+
+.tree-view .tree-cell .tree-disclosure-node .arrow {
+    -fx-background-color: -fx-mid-text-color;
+}
+
+.tree-view .tree-cell:selected .tree-disclosure-node .arrow {
+    -fx-background-color: -fx-dark-text-color;
+}
+
+/* ===== Split Pane ===== */
+.split-pane {
+    -fx-background-color: -fx-background;
+    -fx-padding: 0;
+}
+
+.split-pane > .split-pane-divider {
+    -fx-background-color: -xdat-border-color;
+    -fx-padding: 2;
+}
+
+.split-pane:horizontal > .split-pane-divider {
+    -fx-background-insets: 0;
+}
+
+.split-pane:vertical > .split-pane-divider {
+    -fx-background-insets: 0;
+}
+
+/* ===== Scroll Bars ===== */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #c0c0c0;
+    -fx-background-radius: 4;
+    -fx-background-insets: 2;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #a0a0a0;
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: #808080;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* ===== Text Fields ===== */
+.text-field, .text-area {
+    -fx-background-color: -fx-control-inner-background;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+    -fx-text-fill: -fx-dark-text-color;
+    -fx-prompt-text-fill: -fx-light-text-color;
+}
+
+.text-field:focused, .text-area:focused {
+    -fx-border-color: -fx-accent;
+    -fx-effect: dropshadow(gaussian, -fx-faint-focus-color, 6, 0, 0, 0);
+}
+
+.text-area {
+    -fx-padding: 8;
+}
+
+.text-area .content {
+    -fx-background-color: transparent;
+    -fx-padding: 4;
+}
+
+/* ===== Combo Box ===== */
+.combo-box {
+    -fx-background-color: -fx-control-inner-background;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.combo-box:hover {
+    -fx-border-color: #b0b0b0;
+}
+
+.combo-box:focused {
+    -fx-border-color: -fx-accent;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.combo-box .arrow {
+    -fx-background-color: -fx-mid-text-color;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 10, 0, 0, 4);
+}
+
+/* ===== Check Box ===== */
+.check-box {
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+.check-box .box {
+    -fx-background-color: -fx-control-inner-background;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 3;
+}
+
+.check-box:hover .box {
+    -fx-border-color: #b0b0b0;
+}
+
+.check-box:selected .box {
+    -fx-background-color: -fx-accent;
+    -fx-border-color: -fx-accent;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+/* ===== Progress Bar ===== */
+.progress-bar {
+    -fx-indeterminate-bar-length: 60;
+    -fx-indeterminate-bar-escape: true;
+    -fx-indeterminate-bar-flip: true;
+    -fx-indeterminate-bar-animation-time: 2;
+}
+
+.progress-bar .track {
+    -fx-background-color: #e0e0e0;
+    -fx-background-radius: 4;
+    -fx-padding: 0;
+}
+
+.progress-bar .bar {
+    -fx-background-color: linear-gradient(to right, -fx-accent, #40a0e8);
+    -fx-background-radius: 4;
+    -fx-background-insets: 0;
+    -fx-padding: 4;
+}
+
+/* ===== Property Sheet (ControlsFX) ===== */
+.property-sheet {
+    -fx-background-color: -fx-control-inner-background;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.property-sheet .property-pane {
+    -fx-background-color: transparent;
+}
+
+/* ===== Accordion ===== */
+.accordion {
+    -fx-background-color: transparent;
+}
+
+.accordion .titled-pane {
+    -fx-background-color: transparent;
+}
+
+.titled-pane > .title {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: -xdat-border-color;
+    -fx-padding: 10 12;
+}
+
+.titled-pane > .title:hover {
+    -fx-background-color: #e8e8e8;
+}
+
+.titled-pane > .title > .arrow-button .arrow {
+    -fx-background-color: -fx-mid-text-color;
+}
+
+.titled-pane:expanded > .title {
+    -fx-background-color: #e8e8e8;
+}
+
+.titled-pane > .content {
+    -fx-background-color: -fx-control-inner-background;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-width: 0 1 1 1;
+}
+
+/* ===== Dialog ===== */
+.dialog-pane {
+    -fx-background-color: -fx-background;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #f8f8f8;
+    -fx-padding: 16;
+}
+
+.dialog-pane .content {
+    -fx-padding: 16;
+}
+
+.dialog-pane .button-bar {
+    -fx-padding: 12 16;
+    -fx-background-color: #f8f8f8;
+}
+
+.alert.confirmation .dialog-pane,
+.alert.information .dialog-pane,
+.alert.warning .dialog-pane,
+.alert.error .dialog-pane {
+    -fx-border-color: -xdat-border-color;
+}
+
+/* ===== Tooltip ===== */
+.tooltip {
+    -fx-background-color: #404040;
+    -fx-border-color: #505050;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 8, 0, 0, 2);
+}
+
+/* ===== Hyperlink ===== */
+.hyperlink {
+    -fx-text-fill: -fx-accent;
+    -fx-border-color: transparent;
+}
+
+.hyperlink:hover {
+    -fx-text-fill: #40a0e8;
+    -fx-underline: true;
+}
+
+.hyperlink:visited {
+    -fx-text-fill: #6a5acd;
+}
+
+/* ===== List View ===== */
+.list-view {
+    -fx-background-color: -fx-control-inner-background;
+    -fx-border-color: -xdat-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 8 12;
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+.list-cell:hover {
+    -fx-background-color: -xdat-hover-color;
+}
+
+.list-cell:selected {
+    -fx-background-color: -fx-selection-bar;
+}
+
+/* ===== Scripting Console Specific ===== */
+.script-editor {
+    -fx-font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    -fx-font-size: 13px;
+}
+
+.script-output {
+    -fx-font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #228b22;
+}
+
+/* ===== Status/Header Bar ===== */
+.header-bar {
+    -fx-background-color: #f8f8f8;
+    -fx-border-color: transparent transparent -xdat-border-color transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 8 16;
+}
+
+.status-bar {
+    -fx-background-color: #f8f8f8;
+    -fx-border-color: -xdat-border-color transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 6 16;
+}
+
+/* ===== Custom Icon Styling ===== */
+.icon-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 6;
+    -fx-background-radius: 4;
+}
+
+.icon-button:hover {
+    -fx-background-color: -xdat-hover-color;
+}
+
+.icon-button:pressed {
+    -fx-background-color: -xdat-pressed-color;
+}
+
+/* ===== Grid Pane for Properties ===== */
+.properties-grid {
+    -fx-hgap: 12;
+    -fx-vgap: 8;
+    -fx-padding: 12;
+}
+
+.properties-grid .label {
+    -fx-text-fill: -fx-mid-text-color;
+}
+
+.properties-grid .value {
+    -fx-text-fill: -fx-dark-text-color;
+}

@@ -130,7 +130,12 @@ public class Controller implements Initializable {
     private MenuItem saveAs;
     @FXML
     private Menu versionMenu;
+    @FXML
+    private Menu viewMenu;
+    @FXML
+    private Menu themeMenu;
     private ToggleGroup version = new ToggleGroup();
+    private ToggleGroup themeGroup = new ToggleGroup();
     @FXML
     private TabPane tabs;
     @FXML
@@ -163,6 +168,8 @@ public class Controller implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         interfaceResources = resources;
+
+        initializeThemeMenu();
 
         Node scriptingTab = loadScriptTabContent();
 
@@ -227,6 +234,43 @@ public class Controller implements Initializable {
             } catch (Exception ignore) {
             }
         });
+    }
+
+    private void initializeThemeMenu() {
+        String savedTheme = XdatEditor.getPrefs().get("theme", "dark");
+
+        RadioMenuItem darkTheme = new RadioMenuItem(interfaceResources.getString("view.theme.dark"));
+        darkTheme.setToggleGroup(themeGroup);
+        darkTheme.setUserData("dark");
+        darkTheme.setOnAction(e -> applyTheme("dark"));
+
+        RadioMenuItem lightTheme = new RadioMenuItem(interfaceResources.getString("view.theme.light"));
+        lightTheme.setToggleGroup(themeGroup);
+        lightTheme.setUserData("light");
+        lightTheme.setOnAction(e -> applyTheme("light"));
+
+        themeMenu.getItems().addAll(darkTheme, lightTheme);
+
+        if ("light".equals(savedTheme)) {
+            lightTheme.setSelected(true);
+        } else {
+            darkTheme.setSelected(true);
+        }
+    }
+
+    private void applyTheme(String theme) {
+        Scene scene = editor.getStage().getScene();
+        scene.getStylesheets().clear();
+
+        String cssPath;
+        if ("light".equals(theme)) {
+            cssPath = getClass().getResource("light-theme.css").toExternalForm();
+        } else {
+            cssPath = getClass().getResource("dark-theme.css").toExternalForm();
+        }
+
+        scene.getStylesheets().add(cssPath);
+        XdatEditor.getPrefs().put("theme", theme);
     }
 
     public void registerVersion(String name, String xdatClass) {
@@ -425,7 +469,11 @@ public class Controller implements Initializable {
                     Stage stage = new Stage();
                     stage.setTitle(value.toString());
                     Scene scene = new Scene(((ComponentFactory) value).getComponent());
-                    scene.getStylesheets().add(getClass().getResource("l2.css").toExternalForm());
+                    String currentTheme = XdatEditor.getPrefs().get("theme", "dark");
+                    String cssPath = "light".equals(currentTheme)
+                            ? getClass().getResource("light-theme.css").toExternalForm()
+                            : getClass().getResource("dark-theme.css").toExternalForm();
+                    scene.getStylesheets().add(cssPath);
                     stage.setScene(scene);
                     stage.show();
                 });

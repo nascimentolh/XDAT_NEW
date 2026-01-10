@@ -167,7 +167,17 @@ public class PropertySheetSkin extends SkinBase<PropertySheet> {
                     }
                 };
             }
-            editor.setValue(item.getValue());
+            try {
+                editor.setValue(item.getValue());
+            } catch (NoSuchMethodError e) {
+                // ControlsFX 11.x compatibility issue with NumericField
+                // Try setting the value through the editor control directly
+                Node editorNode = editor.getEditor();
+                if (editorNode instanceof TextField) {
+                    Object value = item.getValue();
+                    ((TextField) editorNode).setText(value == null ? "" : value.toString());
+                }
+            }
             return editor.getEditor();
         }
     }

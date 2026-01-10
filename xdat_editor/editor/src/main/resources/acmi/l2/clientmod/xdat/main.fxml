@@ -22,29 +22,44 @@
  THE SOFTWARE.
 -->
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<BorderPane minHeight="0.0" minWidth="0.0" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.65"
-            xmlns:fx="http://javafx.com/fxml/1" fx:controller="acmi.l2.clientmod.xdat.Controller">
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane prefHeight="700.0" prefWidth="1000.0"
+            xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="acmi.l2.clientmod.xdat.Controller"
+            styleClass="root">
     <top>
-        <AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
-            <children>
-                <MenuBar AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-                         AnchorPane.topAnchor="0.0" BorderPane.alignment="CENTER" xmlns:fx="http://javafx.com/fxml">
+        <VBox>
+            <HBox alignment="CENTER_LEFT" styleClass="header-bar" spacing="8">
+                <MenuBar styleClass="menu-bar" HBox.hgrow="ALWAYS">
                     <menus>
                         <Menu text="%file" mnemonicParsing="false">
                             <items>
-                                <MenuItem fx:id="open" onAction="#open" text="%file.open" accelerator="CTRL+O"
-                                          mnemonicParsing="false"/>
-                                <MenuItem fx:id="save" onAction="#save" text="%file.save" accelerator="CTRL+S"
-                                          mnemonicParsing="false"/>
-                                <MenuItem fx:id="saveAs" onAction="#saveAs" text="%file.save_as"
-                                          accelerator="CTRL+ALT+S" mnemonicParsing="false"/>
+                                <MenuItem fx:id="open" onAction="#open" text="%file.open" accelerator="CTRL+O" mnemonicParsing="false"/>
+                                <MenuItem fx:id="save" onAction="#save" text="%file.save" accelerator="CTRL+S" mnemonicParsing="false"/>
+                                <MenuItem fx:id="saveAs" onAction="#saveAs" text="%file.save_as" accelerator="CTRL+ALT+S" mnemonicParsing="false"/>
                                 <SeparatorMenuItem/>
                                 <MenuItem onAction="#exit" text="%exit" accelerator="ALT+F4" mnemonicParsing="false"/>
                             </items>
                         </Menu>
                         <Menu fx:id="versionMenu" text="%version" mnemonicParsing="false"/>
+                        <Menu fx:id="viewMenu" text="%view" mnemonicParsing="false">
+                            <items>
+                                <Menu fx:id="themeMenu" text="%view.theme" mnemonicParsing="false"/>
+                            </items>
+                        </Menu>
                         <Menu text="%help" mnemonicParsing="false">
                             <items>
                                 <MenuItem onAction="#about" text="%about" accelerator="F1" mnemonicParsing="false"/>
@@ -52,14 +67,20 @@
                         </Menu>
                     </menus>
                 </MenuBar>
-                <ProgressBar fx:id="progressBar" layoutX="600.0" prefWidth="200.0" AnchorPane.bottomAnchor="3.0"
-                             AnchorPane.rightAnchor="3.0" AnchorPane.topAnchor="3.0"/>
-            </children>
-        </AnchorPane>
+                <Region HBox.hgrow="ALWAYS"/>
+                <ProgressBar fx:id="progressBar" prefWidth="180" prefHeight="6" visible="false">
+                    <HBox.margin>
+                        <Insets right="8"/>
+                    </HBox.margin>
+                </ProgressBar>
+            </HBox>
+        </VBox>
     </top>
     <center>
-        <TabPane fx:id="tabs" minHeight="0.0" minWidth="0.0" tabClosingPolicy="UNAVAILABLE"
-                 AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-                 AnchorPane.topAnchor="0.0" BorderPane.alignment="CENTER"/>
+        <TabPane fx:id="tabs" tabClosingPolicy="UNAVAILABLE" styleClass="tab-pane">
+            <padding>
+                <Insets top="0" right="0" bottom="0" left="0"/>
+            </padding>
+        </TabPane>
     </center>
 </BorderPane>

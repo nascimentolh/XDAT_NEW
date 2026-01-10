@@ -1,5 +1,6 @@
 [tools]
-java = "21"
+java = "zulu-javafx-21"
+ant = "latest"
 
 # JavaFX 21 SDK must be downloaded separately from:
 # https://gluonhq.com/products/javafx/

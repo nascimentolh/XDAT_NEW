@@ -3,9 +3,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Check if JavaFX is bundled in JDK
-if java --module-path . --list-modules 2>/dev/null | grep -q "javafx.controls"; then
+if java --list-modules 2>/dev/null | grep -q "javafx.controls"; then
     # JavaFX bundled - run directly
-    java --add-modules javafx.controls,javafx.fxml,javafx.graphics -jar xdat-editor-1.3.10.jar "$@"
+    java -jar xdat-editor-1.3.10.jar "$@"
 else
     # External JavaFX SDK needed
     JAVAFX_PATH="${JAVAFX_HOME:-$HOME/javafx-sdk-21}/lib"
