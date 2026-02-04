@@ -53,6 +53,9 @@
                                 <MenuItem fx:id="save" onAction="#save" text="%file.save" accelerator="CTRL+S" mnemonicParsing="false"/>
                                 <MenuItem fx:id="saveAs" onAction="#saveAs" text="%file.save_as" accelerator="CTRL+ALT+S" mnemonicParsing="false"/>
                                 <SeparatorMenuItem/>
+                                <MenuItem fx:id="exportWindowMenuItem" onAction="#exportWindow" text="%file.export_window" accelerator="CTRL+E" mnemonicParsing="false"/>
+                                <MenuItem fx:id="importWindowMenuItem" onAction="#importWindow" text="%file.import_window" accelerator="CTRL+I" mnemonicParsing="false"/>
+                                <SeparatorMenuItem/>
                                 <MenuItem onAction="#exit" text="%exit" accelerator="ALT+F4" mnemonicParsing="false"/>
                             </items>
                         </Menu>

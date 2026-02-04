@@ -35,6 +35,7 @@ import acmi.l2.clientmod.xdat.search.SearchPanel;
 import acmi.l2.clientmod.xdat.util.ClipboardManager;
 import acmi.l2.clientmod.xdat.util.ElementCloner;
 import acmi.l2.clientmod.xdat.util.RecentFilesManager;
+import acmi.l2.clientmod.xdat.util.WindowExporter;
 import groovy.lang.GroovyClassLoader;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
@@ -154,6 +155,10 @@ public class Controller implements Initializable {
     private MenuItem pasteMenuItem;
     @FXML
     private MenuItem duplicateMenuItem;
+    @FXML
+    private MenuItem exportWindowMenuItem;
+    @FXML
+    private MenuItem importWindowMenuItem;
     @FXML
     private Menu recentFilesMenu;
     @FXML
@@ -388,6 +393,8 @@ public class Controller implements Initializable {
         copyMenuItem.disableProperty().bind(nullXdatObject);
         cutMenuItem.disableProperty().bind(nullXdatObject);
         duplicateMenuItem.disableProperty().bind(nullXdatObject);
+        exportWindowMenuItem.disableProperty().bind(nullXdatObject);
+        importWindowMenuItem.disableProperty().bind(nullXdatObject);
         pasteMenuItem.disableProperty().bind(
                 nullXdatObject.or(clipboardManager.hasContentProperty().not())
         );
@@ -1430,6 +1437,144 @@ public class Controller implements Initializable {
             editor.getHistory().valueCreated(treeItemToScriptString(selected.getParent()), clone.getClass());
             log.info("Duplicated element: " + clone);
         }
+    }
+
+    @FXML
+    private void exportWindow() {
+        TreeItem<Object> selected = getSelectedTreeItem();
+        if (selected == null || selected.getValue() instanceof ListHolder) {
+            Dialogs.showException(Alert.AlertType.WARNING,
+                    interfaceResources.getString("export.select_element"),
+                    interfaceResources.getString("export.select_element_message"), null);
+            return;
+        }
+
+        Object value = selected.getValue();
+        if (!(value instanceof IOEntity)) {
+            return;
+        }
+
+        // Verify it's inside a list (valid for export)
+        if (selected.getParent() == null ||
+                !(selected.getParent().getValue() instanceof ListHolder)) {
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle(interfaceResources.getString("export.title"));
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter(WindowExporter.getFileFilterName() + " (" + WindowExporter.getFileExtension() + ")", WindowExporter.getFileExtension()),
+                new FileChooser.ExtensionFilter("All files", "*.*"));
+
+        // Suggest filename based on element name
+        String suggestedName = value.toString().replaceAll("[^a-zA-Z0-9_-]", "_");
+        fileChooser.setInitialFileName(suggestedName + ".xdatwin");
+
+        if (initialDirectory.getValue() != null &&
+                initialDirectory.getValue().exists() &&
+                initialDirectory.getValue().isDirectory()) {
+            fileChooser.setInitialDirectory(initialDirectory.getValue());
+        }
+
+        File file = fileChooser.showSaveDialog(editor.getStage());
+        if (file == null) {
+            return;
+        }
+
+        initialDirectory.setValue(file.getParentFile());
+
+        editor.execute(() -> {
+            WindowExporter.exportWindow((IOEntity) value, file);
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle(interfaceResources.getString("export.success"));
+                alert.setHeaderText(null);
+                alert.setContentText(String.format(
+                        interfaceResources.getString("export.success_message"),
+                        file.getName()));
+                alert.showAndWait();
+            });
+            return null;
+        }, e -> Dialogs.showException(Alert.AlertType.ERROR,
+                interfaceResources.getString("export.error"), e.getMessage(), e));
+    }
+
+    @FXML
+    private void importWindow() {
+        // Ensure we have a valid target list
+        if (currentTreeView == null || currentTreeView.getRoot() == null) {
+            Dialogs.showException(Alert.AlertType.WARNING,
+                    interfaceResources.getString("import.no_file"),
+                    interfaceResources.getString("import.open_file_first"), null);
+            return;
+        }
+
+        TreeItem<Object> rootItem = currentTreeView.getRoot();
+        if (!(rootItem.getValue() instanceof ListHolder)) {
+            return;
+        }
+
+        ListHolder listHolder = (ListHolder) rootItem.getValue();
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle(interfaceResources.getString("import.title"));
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter(WindowExporter.getFileFilterName() + " (" + WindowExporter.getFileExtension() + ")", WindowExporter.getFileExtension()),
+                new FileChooser.ExtensionFilter("All files", "*.*"));
+
+        if (initialDirectory.getValue() != null &&
+                initialDirectory.getValue().exists() &&
+                initialDirectory.getValue().isDirectory()) {
+            fileChooser.setInitialDirectory(initialDirectory.getValue());
+        }
+
+        File file = fileChooser.showOpenDialog(editor.getStage());
+        if (file == null) {
+            return;
+        }
+
+        initialDirectory.setValue(file.getParentFile());
+
+        editor.execute(() -> {
+            // Import using the same classloader and package as the current schema
+            ClassLoader classLoader = listHolder.type.getClassLoader();
+            String packageName = listHolder.type.getPackage().getName();
+            IOEntity importedElement = WindowExporter.importWindow(file, classLoader, packageName);
+
+            // Verify type compatibility
+            if (!listHolder.type.isAssignableFrom(importedElement.getClass())) {
+                Platform.runLater(() -> {
+                    Dialogs.showException(Alert.AlertType.ERROR,
+                            interfaceResources.getString("import.incompatible"),
+                            String.format(interfaceResources.getString("import.incompatible_message"),
+                                    importedElement.getClass().getSimpleName(),
+                                    listHolder.type.getSimpleName()),
+                            null);
+                });
+                return null;
+            }
+
+            Platform.runLater(() -> {
+                TreeItem<Object> newTreeItem = createTreeItem(importedElement);
+
+                // Create and record command for undo support
+                ImportWindowCommand command = new ImportWindowCommand(
+                        listHolder.list, rootItem, importedElement, newTreeItem, file.getName());
+                command.execute();
+                editor.getUndoManager().record(command);
+
+                // Select the imported element
+                currentTreeView.getSelectionModel().select(newTreeItem);
+                currentTreeView.scrollTo(currentTreeView.getSelectionModel().getSelectedIndex());
+
+                editor.getHistory().valueCreated(treeItemToScriptString(rootItem),
+                        importedElement.getClass());
+                log.info("Imported element: " + importedElement + " from " + file.getName());
+            });
+
+            return null;
+        }, e -> Dialogs.showException(Alert.AlertType.ERROR,
+                interfaceResources.getString("import.error"), e.getMessage(), e));
     }
 
     private TreeItem<Object> getSelectedTreeItem() {
