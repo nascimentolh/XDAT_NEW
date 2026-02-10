@@ -19,9 +19,9 @@
     <!-- External dependencies (download to lib/) -->
     <property name="commons-lang3.jar" value="${lib.dir}/commons-lang3-3.14.0.jar"/>
     <property name="commons-io.jar" value="${lib.dir}/commons-io-2.15.1.jar"/>
-    <property name="lombok.jar" value="${lib.dir}/lombok-1.18.30.jar"/>
+    <property name="lombok.jar" value="${lib.dir}/lombok-1.18.42.jar"/>
 
-    <!-- Java 21 settings -->
+    <!-- Java 25 settings (compiling for Java 21+ compatibility) -->
     <property name="java.source" value="21"/>
     <property name="java.target" value="21"/>
 
@@ -54,7 +54,7 @@
              dest="${commons-lang3.jar}" skipexisting="true"/>
         <get src="https://repo1.maven.org/maven2/commons-io/commons-io/2.15.1/commons-io-2.15.1.jar"
              dest="${commons-io.jar}" skipexisting="true"/>
-        <get src="https://repo1.maven.org/maven2/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar"
+        <get src="https://repo1.maven.org/maven2/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar"
              dest="${lombok.jar}" skipexisting="true"/>
     </target>
 

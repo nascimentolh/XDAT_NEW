@@ -31,19 +31,24 @@ XDAT Editor is an open-source tool for editing Lineage 2 client interface files 
 
 ### Requirements
 
-- **Java 21+** with JavaFX
+- **Java 21+** with JavaFX (fully compatible with Java 25)
+
+> **Note:** The project is compiled with Java 21 target for broad compatibility but runs on any JDK from 21 through 25 and beyond. Build dependencies (Lombok 1.18.42, Groovy 5.0.4, ASM 9.9.1) fully support Java 25.
 
 #### Recommended JDK Options (includes JavaFX):
 
-1. **Azul Zulu JDK FX** (Recommended)
-   - Download: https://www.azul.com/downloads/?package=jdk-fx
+1. **Azul Zulu JDK FX** (Recommended - Java 21 LTS)
+   - Download: https://www.azul.com/downloads/?version=java-21-lts&package=jdk-fx
+   - Stable LTS version with bundled JavaFX
 
-2. **Liberica Full JDK**
-   - Download: https://bell-sw.com/pages/downloads/
+2. **Liberica Full JDK** (Java 21 LTS)
+   - Download: https://bell-sw.com/pages/downloads/#jdk-21-lts
+   - Alternative LTS option with JavaFX included
 
 3. **Standard JDK + JavaFX SDK**
-   - Java 21: https://adoptium.net/
-   - JavaFX SDK: https://gluonhq.com/products/javafx/
+   - Java 21+ (LTS or latest): https://adoptium.net/
+   - JavaFX SDK 21: https://gluonhq.com/products/javafx/
+   - Manual setup required
 
 ### Installation
 
@@ -137,19 +142,24 @@ XDAT Editor é uma ferramenta open-source para edição de arquivos de interface
 
 ### Requisitos
 
-- **Java 21+** com JavaFX
+- **Java 21+** com JavaFX (totalmente compatível com Java 25)
+
+> **Nota:** O projeto é compilado com alvo Java 21 para ampla compatibilidade, mas roda em qualquer JDK da versão 21 até 25 e além. As dependências de build (Lombok 1.18.42, Groovy 5.0.4, ASM 9.9.1) suportam completamente Java 25.
 
 #### Opções de JDK Recomendadas (inclui JavaFX):
 
-1. **Azul Zulu JDK FX** (Recomendado)
-   - Download: https://www.azul.com/downloads/?package=jdk-fx
+1. **Azul Zulu JDK FX** (Recomendado - Java 21 LTS)
+   - Download: https://www.azul.com/downloads/?version=java-21-lts&package=jdk-fx
+   - Versão LTS estável com JavaFX incluído
 
-2. **Liberica Full JDK**
-   - Download: https://bell-sw.com/pages/downloads/
+2. **Liberica Full JDK** (Java 21 LTS)
+   - Download: https://bell-sw.com/pages/downloads/#jdk-21-lts
+   - Opção LTS alternativa com JavaFX incluído
 
 3. **JDK Padrão + JavaFX SDK**
-   - Java 21: https://adoptium.net/
-   - JavaFX SDK: https://gluonhq.com/products/javafx/
+   - Java 21+ (LTS ou mais recente): https://adoptium.net/
+   - JavaFX SDK 21: https://gluonhq.com/products/javafx/
+   - Configuração manual necessária
 
 ### Instalação
 

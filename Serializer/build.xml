@@ -14,7 +14,7 @@
     <!-- Dependencies -->
     <property name="l2io.jar" value="../L2io/dist/l2io-2.2.6.jar"/>
 
-    <!-- Java 21 settings -->
+    <!-- Java 25 settings (compiling for Java 21+ compatibility) -->
     <property name="java.source" value="21"/>
     <property name="java.target" value="21"/>
 

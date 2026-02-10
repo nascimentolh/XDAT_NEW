@@ -3,17 +3,17 @@
     <description>XDAT Editor - Lineage 2 Interface Data Editor</description>
 
     <!-- Properties -->
-    <property name="version" value="1.6.0"/>
+    <property name="version" value="1.6.1"/>
     <property name="build.dir" value="build"/>
     <property name="dist.dir" value="dist"/>
     <property name="lib.dir" value="lib"/>
 
-    <!-- Java 21 settings -->
+    <!-- Java 25 settings (compiling for Java 21+ compatibility) -->
     <property name="java.source" value="21"/>
     <property name="java.target" value="21"/>
 
     <!-- JavaFX SDK path (optional - only needed if JavaFX not bundled in JDK) -->
-    <property name="javafx.sdk" value="${user.home}/javafx-sdk-21"/>
+    <property name="javafx.sdk" value="${user.home}/javafx-sdk-25"/>
     <property name="javafx.lib" value="${javafx.sdk}/lib"/>
 
     <!-- External library projects -->
@@ -25,10 +25,10 @@
     <!-- Local libs -->
     <property name="jsquish.jar" value="commons/l2resources/libs/jsquish.jar"/>
 
-    <!-- External dependencies versions (Java 21 compatible) -->
+    <!-- External dependencies versions (Java 25 compatible) -->
     <property name="controlsfx.version" value="11.2.1"/>
-    <property name="groovy.version" value="4.0.18"/>
-    <property name="asm.version" value="9.6"/>
+    <property name="groovy.version" value="5.0.4"/>
+    <property name="asm.version" value="9.9.1"/>
     <property name="commons-csv.version" value="1.10.0"/>
     <property name="commons-io.version" value="2.15.1"/>
     <property name="commons-lang3.version" value="3.14.0"/>

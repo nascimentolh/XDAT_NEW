@@ -44,7 +44,7 @@ REM Se JAVA_FX_HOME estiver definido, usa ele
 if defined JAVA_FX_HOME (
     if exist "%JAVA_FX_HOME%\bin\java.exe" (
         echo Usando Java de: %JAVA_FX_HOME%
-        "%JAVA_FX_HOME%\bin\java.exe" -jar xdat-editor-1.5.0.jar %*
+        "%JAVA_FX_HOME%\bin\java.exe" -jar xdat-editor-1.6.1.jar %*
         goto :eof
     ) else (
         echo AVISO: JAVA_FX_HOME definido mas java.exe nao encontrado em %JAVA_FX_HOME%\bin
@@ -54,7 +54,7 @@ if defined JAVA_FX_HOME (
 )
 
 REM Try running with bundled JavaFX first (JDK padrao do sistema)
-java --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.swing -jar xdat-editor-1.5.0.jar %* 2>nul
+java --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.swing -jar xdat-editor-1.6.1.jar %* 2>nul
 if %errorlevel%==0 goto :eof
 
 REM Fall back to external JavaFX SDK
@@ -63,7 +63,7 @@ if "%JAVAFX_HOME%"=="" set JAVAFX_PATH=%USERPROFILE%\javafx-sdk-21\lib
 
 if exist "%JAVAFX_PATH%\javafx.controls.jar" (
     echo Usando JavaFX de: %JAVAFX_PATH%
-    java --module-path "%JAVAFX_PATH%" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.swing -jar xdat-editor-1.5.0.jar %*
+    java --module-path "%JAVAFX_PATH%" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.swing -jar xdat-editor-1.6.1.jar %*
 ) else (
     echo.
     echo ============================================================
